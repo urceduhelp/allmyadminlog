@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>පාඨමාලා දත්ත ඇතුළත් කිරීම</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Sinhala:wght@500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --ink:#152A3A;
+    --paper:#F6F3EC;
+    --teal:#0E6E6A;
+    --teal-dark:#0A4F4C;
+    --gold:#D9A441;
+    --gold-soft:#F1DDAE;
+    --line:#D8D0BE;
+    --danger:#B4483C;
+    --card:#FFFFFF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(217,164,65,0.16), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(14,110,106,0.14), transparent 55%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans Sinhala','Noto Sans',sans-serif;
+    line-height:1.55;
+    min-height:100vh;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:40px 20px 80px;}
+
+  header.hero{
+    display:flex;flex-direction:column;gap:10px;align-items:flex-start;
+    padding-bottom:24px;margin-bottom:8px;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-size:13px;letter-spacing:.14em;font-weight:700;color:var(--teal-dark);
+    text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:"";width:22px;height:2px;background:var(--gold);display:inline-block;}
+  h1{
+    font-family:'Noto Serif Sinhala',serif;
+    font-size:clamp(26px,4.4vw,36px);
+    margin:0;color:var(--ink);font-weight:700;
+  }
+  .sub{max-width:60ch;color:#3E4E56;font-size:15px;}
+
+  /* --- Passcode gate --- */
+  #gate{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px;margin-top:24px;
+  }
+  #gate p{margin:0 0 14px;font-size:14.5px;color:#3E4E56;}
+  #gate input{
+    width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;
+    font-family:inherit;font-size:15px;background:#FCFBF8;color:var(--ink);
+  }
+  #gate button{
+    margin-top:12px;width:100%;background:var(--teal-dark);color:#fff;border:none;
+    padding:13px 18px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;
+    font-family:inherit;
+  }
+  #gate button:hover{background:var(--teal);}
+  #gate .warn{font-size:12px;color:#8B978C;margin-top:10px;}
+
+  #app{display:none;}
+
+  fieldset{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px 20px 22px;
+    margin:0 0 20px;
+    background:var(--card);
+  }
+  legend{
+    font-family:'Noto Serif Sinhala',serif;
+    font-weight:700;font-size:17px;color:var(--teal-dark);
+    padding:0 8px;
+  }
+  label.field-label{display:block;font-weight:600;font-size:14.5px;margin:14px 0 8px;color:var(--ink);}
+  label.field-label:first-of-type{margin-top:2px;}
+  input[type="text"], input[type="number"], input[type="url"], input[type="date"], select, textarea{
+    width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;
+    font-family:inherit;font-size:14.5px;background:#FCFBF8;color:var(--ink);
+  }
+  input:focus, select:focus, textarea:focus{
+    outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,110,106,0.14);
+  }
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .hint{font-size:12px;color:#7A8A8F;margin-top:6px;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    border:1.5px solid var(--line);border-radius:20px;
+    padding:7px 13px;font-size:13.5px;cursor:pointer;user-select:none;
+    background:#FCFBF8;
+  }
+  .chip input{margin:0;accent-color:var(--teal);}
+  .chip.master{border-color:var(--gold);background:var(--gold-soft);font-weight:600;}
+  .chip.on{border-color:var(--teal);background:#E6F1F0;color:var(--teal-dark);font-weight:600;}
+
+  button.submit{
+    width:100%;background:var(--teal-dark);color:#fff;border:none;
+    padding:15px 20px;border-radius:10px;font-size:16px;font-weight:700;
+    cursor:pointer;font-family:inherit;
+  }
+  button.submit:hover{background:var(--teal);}
+  button.submit:disabled{background:#9AA6A5;cursor:wait;}
+
+  .link-row{
+    display:grid;grid-template-columns:1fr 1.4fr auto;gap:8px;
+    margin-bottom:10px;align-items:center;
+  }
+  .link-row input{margin:0;}
+  .link-row .removeLink{
+    background:none;border:1px solid #E9C3BB;color:var(--danger);
+    width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .link-row .removeLink:hover{background:#FBEAE7;}
+  button.addlink{
+    background:none;border:1.5px dashed var(--teal);color:var(--teal-dark);
+    padding:9px 16px;border-radius:9px;font-size:13.5px;font-weight:600;
+    cursor:pointer;font-family:inherit;margin-top:2px;
+  }
+  button.addlink:hover{background:var(--gold-soft);border-color:var(--gold);}
+  @media (max-width:520px){
+    .link-row{grid-template-columns:1fr;}
+    .link-row .removeLink{width:100%;}
+  }
+
+  .err, .ok{
+    margin-top:14px;padding:12px 14px;border-radius:10px;font-size:14px;display:none;
+  }
+  .err{background:#FBEAE7;border:1px solid #E9C3BB;color:var(--danger);}
+  .ok{background:#E6F1F0;border:1px solid #BFE0DC;color:var(--teal-dark);}
+
+  /* Recent entries */
+  #recentWrap{margin-top:34px;}
+  #recentWrap h2{font-family:'Noto Serif Sinhala',serif;font-size:20px;margin:0 0 14px;}
+  .entry{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;margin-bottom:10px;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  }
+  .entry .info b{display:block;font-size:14.5px;color:var(--ink);}
+  .entry .info span{font-size:12.5px;color:#5C6B70;}
+  .entry .info span.debugline{display:block;margin-top:4px;color:#8B978C;}
+  .entry button.del{
+    background:none;border:1px solid #E9C3BB;color:var(--danger);
+    padding:6px 12px;border-radius:7px;font-size:12.5px;cursor:pointer;font-family:inherit;
+    white-space:nowrap;
+  }
+  .entry button.del:hover{background:#FBEAE7;}
+  .entry button.del.edit{border-color:var(--teal); color:var(--teal-dark);}
+  .entry button.del.edit:hover{background:var(--gold-soft);}
+
+  footer.note{margin-top:40px;font-size:12px;color:#8B978C;text-align:center;}
+
+  @media (max-width:520px){
+    .wrap{padding:26px 14px 60px;}
+    .row2{grid-template-columns:1fr;}
+    fieldset{padding:16px 14px 18px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="eyebrow">පරිපාලක පිටුව</span>
+    <h1>නව පාඨමාලාවක් ඇතුළත් කරන්න</h1>
+    <p class="sub">මෙම පිටුව හරහා finding_cj database table එකට කෙලින්ම නව පාඨමාලා තොරතුරු එක් කළ හැක.</p>
+  </header>
+
+  <div id="gate">
+    <p>මෙම පිටුව පරිපාලකයින් සඳහා පමණි. ඉදිරියට යාමට passcode එක ඇතුළත් කරන්න.</p>
+    <input type="password" id="passInput" placeholder="Passcode">
+    <button id="gateBtn" type="button">ඇතුළු වන්න</button>
+    <div class="err" id="gateErr">වැරදි passcode එකකි.</div>
+    <p class="warn">සටහන: මෙය සරල ආරක්ෂණයක් පමණි (page එකේ code එකේම ලියා ඇති නිසා තාක්ෂණිකව එය බලහත්කාරයෙන් මඟ හැරිය හැක). මෙම පිටුවේ link එක අන් අයට බෙදා නොගන්න.</p>
+  </div>
+
+  <div id="app">
+
+    <div id="editBanner" style="display:none; background:var(--gold-soft); border:1px solid var(--gold); color:var(--teal-dark); padding:12px 16px; border-radius:10px; margin-bottom:16px; font-size:14px; font-weight:600;">
+      ✏️ සංස්කරණය කරමින්: <span id="editBannerName"></span>
+    </div>
+
+    <form id="addForm">
+      <fieldset>
+        <legend>මූලික තොරතුරු</legend>
+
+        <label class="field-label" for="c_name">පාඨමාලාවේ නම *</label>
+        <input type="text" id="c_name" required placeholder="උදා: තොරතුරු තාක්ෂණ ඩිප්ලෝමා පාඨමාලාව">
+
+        <label class="field-label" for="institute">ආයතනයේ / සමාගමේ නම</label>
+        <input type="text" id="institute" placeholder="උදා: ශ්‍රී ලංකා තොරතුරු තාක්ෂණ ආයතනය">
+
+        <label class="field-label" for="closing_d">අයදුම් කළ යුතු අවසන් දිනය</label>
+        <input type="date" id="closing_d">
+        <p class="hint">අවසන් දිනයෙන් දින 3කට පසු මෙම පාඨමාලාව සෙවුම් ප්‍රතිඵලවලින් ස්වයංක්‍රීයව සැඟවේ.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>සබැඳි (Links)</legend>
+        <p class="hint" style="margin-top:0;">එක් එක් link එකකට නමක් (label) දී ඇතුළත් කරන්න. උදා: "ලියාපදිංචියට", "වැඩි විස්තර", "පුවත්පත් දැන්වීම". අවශ්‍ය තරම් link එකතු කළ හැක.</p>
+        <div id="linksContainer"></div>
+        <button type="button" class="addlink" id="addLinkBtn">+ තවත් Link එකක් එක් කරන්න</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>වයස</legend>
+        <div class="row2">
+          <div>
+            <label class="field-label" for="ageMin">අවම වයස</label>
+            <input type="number" id="ageMin" min="1" max="100" placeholder="18">
+          </div>
+          <div>
+            <label class="field-label" for="ageMax">උපරිම වයස</label>
+            <input type="number" id="ageMax" min="1" max="100" placeholder="35">
+          </div>
+        </div>
+        <div class="chips" style="margin-top:12px;">
+          <label class="chip master"><input type="checkbox" id="ageAny"> ඕනෑම වයසක් සුදුසුයි</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>ස්ත්‍රී පුරුෂ භාවය</legend>
+        <div class="chips" id="genderChips">
+          <label class="chip"><input type="checkbox" value="ස්ත්‍රී"> ස්ත්‍රී</label>
+          <label class="chip"><input type="checkbox" value="පුරුෂ"> පුරුෂ</label>
+          <label class="chip"><input type="checkbox" value="වෙනත්"> වෙනත්</label>
+        </div>
+        <p class="hint">කිසිවක් නොතෝරන්නේ නම් "ඕනෑම" ලෙස සලකනු ලැබේ.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>අවම වශයෙන් අවශ්‍ය අධ්‍යාපන සුදුසුකම්</legend>
+        <div class="chips" id="eduChips">
+          <label class="chip master"><input type="checkbox" value="ඕනෑම" id="eduAny"> ඕනෑම සුදුසුකමක්</label>
+          <label class="chip"><input type="checkbox" value="සා.පෙළට අඩු"> සා.පෙළට අඩු</label>
+          <label class="chip"><input type="checkbox" value="සා.පෙළ සමත්"> සා.පෙළ සමත්</label>
+          <label class="chip"><input type="checkbox" value="උසස් පෙළ සමත්(කලා)"> උසස් පෙළ සමත්(කලා)</label>
+          <label class="chip"><input type="checkbox" value="උසස් පෙළ සමත්(ජීව විද්‍යා)"> උසස් පෙළ සමත්(ජීව විද්‍යා)</label>
+          <label class="chip"><input type="checkbox" value="උසස් පෙළ සමත්(ගණිත)"> උසස් පෙළ සමත්(ගණිත)</label>
+          <label class="chip"><input type="checkbox" value="උසස් පෙළ සමත්(වාණිජ)"> උසස් පෙළ සමත්(වාණිජ)</label>
+          <label class="chip"><input type="checkbox" value="උසස් පෙළ සමත්(තාක්ෂණවේදය)"> උසස් පෙළ සමත්(තාක්ෂණවේදය)</label>
+          <label class="chip"><input type="checkbox" value="සහතිකපත්‍ර පාඨමාලා කර තිබේ"> සහතිකපත්‍ර පාඨමාලා කර තිබේ</label>
+          <label class="chip"><input type="checkbox" value="ඩිප්ලෝමා කර තිබේ"> ඩිප්ලෝමා කර තිබේ</label>
+          <label class="chip"><input type="checkbox" value="ජාතික ඩිප්ලෝමා කර තිබේ"> ජාතික ඩිප්ලෝමා කර තිබේ</label>
+          <label class="chip"><input type="checkbox" value="පළමු උපාධිය නිම කර තිබේ"> පළමු උපාධිය නිම කර තිබේ</label>
+          <label class="chip"><input type="checkbox" value="පශ්චාත් උපාධි නිමකර තිබේ"> පශ්චාත් උපාධි නිමකර තිබේ</label>
+        </div>
+        <p class="hint">අදාළ වන සියල්ල තෝරන්න. උදා: "ඩිප්ලෝමා" හා "ජාතික ඩිප්ලෝමා" යන දෙකටම විවෘත නම් දෙකම තෝරන්න.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>සුදුසු දිස්ත්‍රික්ක</legend>
+        <div class="chips" id="districtChips">
+          <label class="chip master"><input type="checkbox" value="ලංකාවේ ඕනෑම තැනකින්" id="distAny"> ලංකාවේ ඕනෑම තැනකින්</label>
+          <label class="chip"><input type="checkbox" value="කොළඹ">කොළඹ</label>
+          <label class="chip"><input type="checkbox" value="ගම්පහ">ගම්පහ</label>
+          <label class="chip"><input type="checkbox" value="කළුතර">කළුතර</label>
+          <label class="chip"><input type="checkbox" value="මහනුවර">මහනුවර</label>
+          <label class="chip"><input type="checkbox" value="මාතලේ">මාතලේ</label>
+          <label class="chip"><input type="checkbox" value="නුවරඑළිය">නුවරඑළිය</label>
+          <label class="chip"><input type="checkbox" value="ගාල්ල">ගාල්ල</label>
+          <label class="chip"><input type="checkbox" value="මාතර">මාතර</label>
+          <label class="chip"><input type="checkbox" value="හම්බන්තොට">හම්බන්තොට</label>
+          <label class="chip"><input type="checkbox" value="යාපනය">යාපනය</label>
+          <label class="chip"><input type="checkbox" value="කිලිනොච්චිය">කිලිනොච්චිය</label>
+          <label class="chip"><input type="checkbox" value="මන්නාරම">මන්නාරම</label>
+          <label class="chip"><input type="checkbox" value="වව්නියාව">වව්නියාව</label>
+          <label class="chip"><input type="checkbox" value="මුලතිව්">මුලතිව්</label>
+          <label class="chip"><input type="checkbox" value="මඩකලපුව">මඩකලපුව</label>
+          <label class="chip"><input type="checkbox" value="අම්පාර">අම්පාර</label>
+          <label class="chip"><input type="checkbox" value="ත්‍රිකුණාමලය">ත්‍රිකුණාමලය</label>
+          <label class="chip"><input type="checkbox" value="කුරුණෑගල">කුරුණෑගල</label>
+          <label class="chip"><input type="checkbox" value="පුත්තලම">පුත්තලම</label>
+          <label class="chip"><input type="checkbox" value="අනුරාධපුරය">අනුරාධපුරය</label>
+          <label class="chip"><input type="checkbox" value="පොළොන්නරුව">පොළොන්නරුව</label>
+          <label class="chip"><input type="checkbox" value="බදුල්ල">බදුල්ල</label>
+          <label class="chip"><input type="checkbox" value="මොණරාගල">මොණරාගල</label>
+          <label class="chip"><input type="checkbox" value="රත්නපුර">රත්නපුර</label>
+          <label class="chip"><input type="checkbox" value="කෑගල්ල">කෑගල්ල</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>ක්ෂේත්‍රය *</legend>
+        <select id="f_area" required>
+          <option value="" disabled selected>තෝරන්න</option>
+          <option>සෞඛ්‍ය හා වෛද්‍ය</option>
+          <option>අධ්‍යාපනය</option>
+          <option>තාක්ෂණය හා IT</option>
+          <option>ඉංජිනේරු</option>
+          <option>ව්‍යාපාර හා කළමනාකරණය</option>
+          <option>මූල්‍ය, ගිණුම්කරණය හා බැංකුකරණය</option>
+          <option>නීතිය හා රාජ්‍ය අධ්‍යයනය</option>
+          <option>විද්‍යා හා පර්යේෂණ</option>
+          <option>කෘෂිකර්මය හා පරිසරය</option>
+          <option>සමාජ විද්‍යා හා මානව ශාස්ත්‍ර</option>
+          <option>කලා, නිර්මාණ හා මාධ්‍ය</option>
+          <option>සංචාරක හා ආගන්තුක සත්කාර</option>
+          <option>ප්‍රවාහන හා ලොජිස්ටික්ස්</option>
+          <option>ක්‍රීඩා හා ශාරීරික සුවතාව</option>
+          <option>වෘත්තීය හා කාර්මික පුහුණුව</option>
+        </select>
+      </fieldset>
+
+      <div style="display:flex; gap:10px;">
+        <button type="submit" class="submit" id="submitBtn">දත්ත ගබඩාවට එකතු කරන්න</button>
+        <button type="button" class="submit" id="cancelEditBtn" style="display:none; flex:0 0 120px; background:#8B978C;">අවලංගු</button>
+      </div>
+      <div class="err" id="formErr"></div>
+      <div class="ok" id="formOk">සාර්ථකව එකතු කරන ලදී ✓</div>
+    </form>
+
+    <div id="recentWrap">
+      <h2>මෑතක එකතු කළ පාඨමාලා</h2>
+      <div id="recentList"><p class="hint">පූරණය වෙමින්...</p></div>
+    </div>
+  </div>
+
+  <footer class="note">finding_cj table එකට සෘජුවම සම්බන්ධ වේ.</footer>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://uqgzlaxsnknheoerbfus.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxZ3psYXhzbmtuaGVvZXJiZnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5MjM2MTUsImV4cCI6MjA3OTI4MzYxNX0.IYWZ7ukx8J-GJMWy7cMk2BWnmzJmJjjE93yEmJie7nQ";
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const TABLE = "finding_cj";
+  let editingId = null;
+  let recentDataCache = [];
+
+  // --- very light passcode gate (deterrent only, not real security) ---
+  const PASSCODE = "admin123";
+  document.getElementById("gateBtn").addEventListener("click", () => {
+    const val = document.getElementById("passInput").value;
+    if (val === PASSCODE){
+      document.getElementById("gate").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      loadRecent();
+    } else {
+      document.getElementById("gateErr").style.display = "block";
+    }
+  });
+  document.getElementById("passInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("gateBtn").click();
+  });
+
+  // --- chip toggle styling + "master" exclusivity ---
+  function wireChips(containerId, masterId){
+    const container = document.getElementById(containerId);
+    container.querySelectorAll('input[type="checkbox"]').forEach(box => {
+      box.addEventListener("change", () => {
+        box.closest(".chip").classList.toggle("on", box.checked);
+        if (masterId){
+          const master = document.getElementById(masterId);
+          if (box.id === masterId && box.checked){
+            container.querySelectorAll('input[type="checkbox"]').forEach(b => {
+              if (b.id !== masterId){ b.checked = false; b.closest(".chip").classList.remove("on"); }
+            });
+          } else if (box.id !== masterId && box.checked){
+            master.checked = false;
+            master.closest(".chip").classList.remove("on");
+          }
+        }
+      });
+    });
+  }
+  wireChips("genderChips", null);
+  wireChips("eduChips", "eduAny");
+  wireChips("districtChips", "distAny");
+
+  function checkedValues(containerId){
+    return [...document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`)].map(b => b.value);
+  }
+
+  function buildAge(){
+    if (document.getElementById("ageAny").checked) return "ඕනෑම";
+    const min = document.getElementById("ageMin").value;
+    const max = document.getElementById("ageMax").value;
+    if (min && max) return `${min}-${max}`;
+    if (min) return `${min}+`;
+    if (max) return `${max}ට අඩු`;
+    return "ඕනෑම";
+  }
+
+  function buildGender(){
+    const vals = checkedValues("genderChips");
+    return vals.length ? vals.join("/") : "ඕනෑම";
+  }
+
+  function buildEdu(){
+    const vals = checkedValues("eduChips");
+    return vals.length ? vals.join(", ") : "ඕනෑම";
+  }
+
+  function buildDistricts(){
+    const vals = checkedValues("districtChips");
+    return vals.length ? vals.join(", ") : "ලංකාවේ ඕනෑම තැනකින්";
+  }
+
+  // --- dynamic link rows ---
+  const linksContainer = document.getElementById("linksContainer");
+  const LINK_PLACEHOLDERS = ["ලියාපදිංචියට", "වැඩි විස්තර", "පුවත්පත් දැන්වීම"];
+
+  function addLinkRow(label = "", url = ""){
+    const idx = linksContainer.children.length;
+    const row = document.createElement("div");
+    row.className = "link-row";
+    const placeholder = LINK_PLACEHOLDERS[idx] || "Link නම";
+    row.innerHTML = `
+      <input type="text" class="link-label" placeholder="${placeholder}" value="${label}">
+      <input type="url" class="link-url" placeholder="https://..." value="${url}">
+      <button type="button" class="removeLink" aria-label="ඉවත් කරන්න">✕</button>
+    `;
+    row.querySelector(".removeLink").addEventListener("click", () => {
+      row.remove();
+      if (!linksContainer.children.length) addLinkRow();
+    });
+    linksContainer.appendChild(row);
+  }
+
+  document.getElementById("addLinkBtn").addEventListener("click", () => addLinkRow());
+
+  function buildLinks(){
+    const rows = [...linksContainer.querySelectorAll(".link-row")];
+    const links = rows.map(row => ({
+      label: row.querySelector(".link-label").value.trim() || "වැඩි විස්තර",
+      url: row.querySelector(".link-url").value.trim()
+    })).filter(l => l.url);
+    return links.length ? JSON.stringify(links) : null;
+  }
+
+  function resetLinkRows(){
+    linksContainer.innerHTML = "";
+    addLinkRow();
+  }
+  resetLinkRows();
+
+  // --- Edit mode helpers ---
+  function setChipsFromValues(containerId, values){
+    document.querySelectorAll(`#${containerId} input[type="checkbox"]`).forEach(box => {
+      const on = values.includes(box.value);
+      box.checked = on;
+      box.closest(".chip").classList.toggle("on", on);
+    });
+  }
+
+  function populateAge(raw){
+    const anyBox = document.getElementById("ageAny");
+    const minBox = document.getElementById("ageMin");
+    const maxBox = document.getElementById("ageMax");
+    anyBox.checked = false;
+    minBox.value = "";
+    maxBox.value = "";
+    const s = (raw || "").trim();
+    if (!s || s.includes("ඕනෑම")){
+      anyBox.checked = true;
+      anyBox.closest(".chip").classList.add("on");
+      return;
+    }
+    const nums = (s.match(/\d+/g) || []).map(Number);
+    if (nums.length === 2){
+      minBox.value = nums[0];
+      maxBox.value = nums[1];
+    } else if (nums.length === 1){
+      if (s.includes("අඩු") || s.includes("පහළ")) maxBox.value = nums[0];
+      else minBox.value = nums[0];
+    } else {
+      anyBox.checked = true;
+      anyBox.closest(".chip").classList.add("on");
+    }
+  }
+
+  function populateLinks(raw){
+    linksContainer.innerHTML = "";
+    if (!raw){ addLinkRow(); return; }
+    try{
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length){
+        parsed.forEach(l => addLinkRow(l.label || "", l.url || ""));
+        return;
+      }
+    } catch(e){ /* plain string fallback */ }
+    addLinkRow("වැඩි විස්තර", raw);
+  }
+
+  function populateForm(row){
+    document.getElementById("c_name").value = row.c_name || "";
+    document.getElementById("institute").value = row.instituta_or_company || "";
+    document.getElementById("closing_d").value = row.closing_d || "";
+    document.getElementById("f_area").value = row.f_area || "";
+
+    populateAge(row.age);
+
+    const genderVals = row.gender && !row.gender.includes("ඕනෑම") ? row.gender.split("/").map(s => s.trim()) : [];
+    setChipsFromValues("genderChips", genderVals);
+
+    const eduVals = row.edu_qualifi && row.edu_qualifi.trim() !== "ඕනෑම"
+      ? row.edu_qualifi.split(",").map(s => s.trim())
+      : ["ඕනෑම"];
+    setChipsFromValues("eduChips", eduVals);
+
+    const locVals = row.r_location && row.r_location.trim() !== "ලංකාවේ ඕනෑම තැනකින්"
+      ? row.r_location.split(",").map(s => s.trim())
+      : ["ලංකාවේ ඕනෑම තැනකින්"];
+    setChipsFromValues("districtChips", locVals);
+
+    populateLinks(row.link);
+  }
+
+  function enterEditMode(row){
+    editingId = row.id;
+    populateForm(row);
+    submitBtn.textContent = "යාවත්කාලීන කරන්න";
+    document.getElementById("cancelEditBtn").style.display = "block";
+    document.getElementById("editBanner").style.display = "block";
+    document.getElementById("editBannerName").textContent = row.c_name || "";
+    formErr.style.display = "none";
+    formOk.style.display = "none";
+    document.getElementById("addForm").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function exitEditMode(){
+    editingId = null;
+    form.reset();
+    document.querySelectorAll(".chip.on").forEach(c => c.classList.remove("on"));
+    resetLinkRows();
+    submitBtn.textContent = "දත්ත ගබඩාවට එකතු කරන්න";
+    document.getElementById("cancelEditBtn").style.display = "none";
+    document.getElementById("editBanner").style.display = "none";
+  }
+
+  document.getElementById("cancelEditBtn").addEventListener("click", exitEditMode);
+
+  const form = document.getElementById("addForm");
+  const submitBtn = document.getElementById("submitBtn");
+  const formErr = document.getElementById("formErr");
+  const formOk = document.getElementById("formOk");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    formErr.style.display = "none";
+    formOk.style.display = "none";
+
+    const c_name = document.getElementById("c_name").value.trim();
+    const f_area = document.getElementById("f_area").value;
+    if (!c_name || !f_area){
+      formErr.textContent = "පාඨමාලාවේ නම සහ ක්ෂේත්‍රය අනිවාර්යයි.";
+      formErr.style.display = "block";
+      return;
+    }
+
+    const payload = {
+      c_name,
+      instituta_or_company: document.getElementById("institute").value.trim() || null,
+      link: buildLinks(),
+      closing_d: document.getElementById("closing_d").value || null,
+      age: buildAge(),
+      gender: buildGender(),
+      edu_qualifi: buildEdu(),
+      r_location: buildDistricts(),
+      f_area
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = editingId ? "යාවත්කාලීන කරමින්..." : "එකතු කරමින්...";
+
+    try{
+      if (editingId){
+        const { error } = await supabaseClient.from(TABLE).update(payload).eq("id", editingId);
+        if (error) throw error;
+        formOk.textContent = "සාර්ථකව යාවත්කාලීන කරන ලදී ✓";
+        formOk.style.display = "block";
+        exitEditMode();
+      } else {
+        const { error } = await supabaseClient.from(TABLE).insert([payload]);
+        if (error) throw error;
+        formOk.textContent = "සාර්ථකව එකතු කරන ලදී ✓";
+        formOk.style.display = "block";
+        form.reset();
+        document.querySelectorAll(".chip.on").forEach(c => c.classList.remove("on"));
+        resetLinkRows();
+      }
+      loadRecent();
+    } catch(err){
+      console.error(err);
+      formErr.textContent = (editingId ? "යාවත්කාලීන කිරීමේදී" : "එකතු කිරීමේදී") + " දෝෂයක් ඇති විය: " + (err.message || "");
+      formErr.style.display = "block";
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = editingId ? "යාවත්කාලීන කරන්න" : "දත්ත ගබඩාවට එකතු කරන්න";
+    }
+  });
+
+  async function loadRecent(){
+    const listEl = document.getElementById("recentList");
+    listEl.innerHTML = `<p class="hint">පූරණය වෙමින්...</p>`;
+    try{
+      const { data, error } = await supabaseClient
+        .from(TABLE)
+        .select("*")
+        .order("id", { ascending: false })
+        .limit(15);
+      if (error) throw error;
+      recentDataCache = data || [];
+
+      if (!data || !data.length){
+        listEl.innerHTML = `<p class="hint">තවම දත්ත එකතු කර නැත.</p>`;
+        return;
+      }
+
+      listEl.innerHTML = "";
+      data.forEach(row => {
+        const div = document.createElement("div");
+        div.className = "entry";
+        let linkNote = "—";
+        if (row.link){
+          try{
+            const parsed = JSON.parse(row.link);
+            linkNote = Array.isArray(parsed) ? `${parsed.length} link` : "1 link";
+          }catch(e){ linkNote = "1 link"; }
+        }
+        div.innerHTML = `
+          <div class="info">
+            <b>${row.c_name || "නම සඳහන් නැත"}</b>
+            <span>${row.instituta_or_company || "—"} · ${row.f_area || "—"} · අවසන් දිනය: ${row.closing_d || "—"} · ${linkNote}</span>
+            <span class="debugline">වයස: ${row.age || "—"} &nbsp;|&nbsp; ස්ත්‍රී/පුරුෂ: ${row.gender || "—"} &nbsp;|&nbsp; සුදුසුකම: ${row.edu_qualifi || "—"} &nbsp;|&nbsp; ප්‍රදේශ: ${row.r_location || "—"}</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button type="button" class="del edit" data-id="${row.id}">සංස්කරණය</button>
+            <button type="button" class="del" data-id="${row.id}">මකන්න</button>
+          </div>
+        `;
+        listEl.appendChild(div);
+      });
+
+      listEl.querySelectorAll(".edit").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = Number(btn.dataset.id);
+          const row = recentDataCache.find(r => r.id === id);
+          if (row) enterEditMode(row);
+        });
+      });
+
+      listEl.querySelectorAll(".del:not(.edit)").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("මෙම පාඨමාලා තොරතුරු මකා දමන්නද?")) return;
+          const id = btn.dataset.id;
+          try{
+            const { error } = await supabaseClient.from(TABLE).delete().eq("id", id);
+            if (error) throw error;
+            if (editingId === Number(id)) exitEditMode();
+            loadRecent();
+          } catch(err){
+            alert("මකා දැමීමේදී දෝෂයක්: " + (err.message || ""));
+          }
+        });
+      });
+    } catch(err){
+      listEl.innerHTML = `<p class="hint">දත්ත පූරණය කිරීමේදී දෝෂයක් ඇති විය.</p>`;
+      console.error(err);
+    }
+  }
+</script>
+</body>
+</html>
