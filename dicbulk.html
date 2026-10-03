@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="si">
+<head>
+<meta charset="utf-8">
+<title>ශබ්දකෝෂය - Bulk Import</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Sinhala&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#F5F1E6; --surface:#FFFFFF; --surface-soft:#FBF8EF;
+    --ink:#202B1D; --muted:#707963; --line:#E4DEC9;
+    --pine:#1E3B24; --pine-light:#33553B; --gold:#B9812C; --danger:#A53A3A; --ok:#1E7B3A;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Noto Sans Sinhala','Segoe UI',sans-serif; }
+  h1,h2{ font-family:'Tiro Sinhala',Georgia,serif; font-weight:400; margin:0; }
+  .topbar{ background:var(--pine); color:#F4F1E4; padding:18px 24px; }
+  .topbar h1{ font-size:24px; }
+  .topbar p{ margin:4px 0 0; color:#B9C6B2; font-size:13px; }
+  .wrap{ max-width:760px; margin:0 auto; padding:22px 16px 50px; }
+  .box{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px; }
+  .box h2{ font-size:18px; color:var(--pine); margin-bottom:10px; }
+  label{ display:block; font-size:13.5px; color:var(--muted); margin-bottom:6px; }
+  select, input[type=email], input[type=password]{
+    padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:15px;
+    background:var(--surface-soft); font-family:inherit; width:100%;
+  }
+  textarea{
+    width:100%; min-height:260px; padding:12px; border:1px solid var(--line); border-radius:10px;
+    background:var(--surface-soft); font-family:ui-monospace,Consolas,monospace; font-size:13px; resize:vertical;
+  }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+  button{
+    font-family:inherit; cursor:pointer; border:1px solid var(--pine); background:var(--pine);
+    color:#F4F1E4; padding:11px 18px; border-radius:9px; font-size:14.5px; font-weight:500;
+  }
+  button:hover{ background:var(--pine-light); }
+  button:disabled{ opacity:.6; cursor:default; }
+  .hint{ font-size:12.5px; color:var(--muted); margin-top:6px; line-height:1.5; }
+  .log{
+    margin-top:14px; font-size:13.5px; white-space:pre-wrap; background:var(--surface-soft);
+    border:1px solid var(--line); border-radius:8px; padding:10px 12px; max-height:300px; overflow:auto;
+  }
+  .log .err{ color:var(--danger); }
+  .log .ok{ color:var(--ok); }
+  .login{ position:fixed; inset:0; z-index:50; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:20px; }
+  .login.hidden{ display:none; }
+  .login-card{ width:min(380px,100%); background:var(--surface); border:1px solid var(--line); border-top:5px solid var(--pine); border-radius:14px; padding:26px 24px; display:flex; flex-direction:column; gap:12px; }
+  .login-card h1{ font-size:22px; color:var(--pine); }
+  .login-msg{ min-height:18px; font-size:13px; color:var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="login" id="login">
+  <form class="login-card" id="loginForm">
+    <h1>Bulk Import</h1>
+    <input id="lEmail" type="email" required autocomplete="username" placeholder="Email">
+    <input id="lPass" type="password" required autocomplete="current-password" placeholder="Password">
+    <div class="login-msg" id="loginMsg"></div>
+    <button type="submit" id="loginBtn">Login</button>
+  </form>
+</div>
+
+<div id="app" style="display:none">
+  <header class="topbar">
+    <h1>Bulk Import</h1>
+    <p>ලොකු වචන ලැයිස්තුවක් error නැතුව Supabase එකට එකවර දාගන්න</p>
+  </header>
+  <div class="wrap">
+
+    <div class="box">
+      <h2>1. Table එක තෝරන්න</h2>
+      <select id="table">
+        <option value="sinhala_dictionary">සිංහල - සිංහල ශබ්දකෝෂය (sinhala_dictionary)</option>
+        <option value="vocabulary">English ශබ්දකෝෂය (vocabulary)</option>
+      </select>
+    </div>
+
+    <div class="box">
+      <h2>2. දත්ත paste කරන්න</h2>
+      <label>Excel / Google Sheets එකෙන් row කිහිපයක් copy කර මෙතැන paste කරන්න (Tab-separated). තීරු අනුපිළිවෙල: word, meaning, examples, note — හෝ ඔබ දුන් 8-තීරු පිටපත (id, word, meaning, examples, note, created_at, user_id, added_by) එසේම paste කළත් කමක් නෑ, id/created_at/user_id/added_by ස්වයංක්‍රීයව නොසලකා හරී.</label>
+      <textarea id="raw" placeholder="word[TAB]meaning[TAB]examples[TAB]note
+අ[TAB]සිංහල හෝඩියේ මුල් අකුර...[TAB][TAB]no"></textarea>
+      <div class="hint">
+        · Header row එකක් (word, meaning, examples, note වැනි) තිබුණත් නැතත් කමක් නෑ — ස්වයංක්‍රීයව හඳුනාගනී.<br>
+        · Excel/Sheets වලින් copy කරන cell එකක් තුළ පේළි කිහිපයක් (Alt+Enter) තිබුණත් හරියටම කියවයි (quote-aware).<br>
+        · id, created_at, user_id ඔබ paste කළත් නොසලකා හරී — user_id ස්වයංක්‍රීයව ඔබේ login ගිණුමට යොදයි.
+      </div>
+      <div class="row">
+        <button id="checkBtn" type="button">1️⃣ පරීක්ෂා කරන්න (Preview)</button>
+      </div>
+      <div class="log" id="preview" style="display:none"></div>
+    </div>
+
+    <div class="box" id="importBox" style="display:none">
+      <h2>3. Import කරන්න</h2>
+      <div class="row">
+        <button id="importBtn" type="button">2️⃣ Supabase එකට එකතු කරන්න</button>
+      </div>
+      <div class="log" id="importLog" style="display:none"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL      = 'https://jcijglwpkfluyzrltimk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjaWpnbHdwa2ZsdXl6cmx0aW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MzU3OTUsImV4cCI6MjA4MjQxMTc5NX0.dvT8OiyVEiYn_DhkMakmSq1Vvr4REDr0kYPnyqCtWHs';
+const $ = id => document.getElementById(id);
+let sb = null, session = null;
+let parsedRows = [];   // {word, meaning, examples[], note}
+
+/* ---------- quote-aware delimited-text parser (handles tabs, commas, embedded newlines) ---------- */
+function parseDelimited(text, delim){
+  const rows = []; let row = []; let cell = ''; let inQuotes = false;
+  for(let i = 0; i < text.length; i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ cell += '"'; i++; } else { inQuotes = false; }
+      } else cell += c;
+    }else{
+      if(c === '"' && cell === '') inQuotes = true;
+      else if(c === delim){ row.push(cell); cell = ''; }
+      else if(c === '\r'){ /* ignore */ }
+      else if(c === '\n'){ row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += c;
+    }
+  }
+  if(cell !== '' || row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r => !(r.length === 1 && r[0].trim() === ''));
+}
+function detectDelimiter(text){
+  const firstLine = text.split('\n')[0] || '';
+  const tabs = (firstLine.match(/\t/g) || []).length;
+  const commas = (firstLine.match(/,/g) || []).length;
+  return tabs >= commas ? '\t' : ',';
+}
+function norm(s){
+  return String(s || '').normalize('NFC').replace(/[\u200c\u200d]/g,'').toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu,' ').trim();
+}
+
+/* ---------- turn pasted rows into {word, meaning, examples[], note} ---------- */
+const KNOWN = ['id','word','meaning','examples','note','created_at','user_id','added_by'];
+function toEntries(text){
+  const delim = detectDelimiter(text);
+  const rows = parseDelimited(text.trim(), delim);
+  if(!rows.length) return { entries: [], skipped: 0, total: 0 };
+
+  let headerIdx = null;
+  const firstLower = rows[0].map(c => c.trim().toLowerCase());
+  const looksHeader = firstLower.some(c => KNOWN.includes(c));
+  let colMap;
+  let dataRows;
+  if(looksHeader){
+    colMap = {};
+    firstLower.forEach((name, i) => { if(KNOWN.includes(name)) colMap[name] = i; });
+    dataRows = rows.slice(1);
+  }else{
+    // assume the fixed order the app exports: id, word, meaning, examples, note, created_at, user_id, added_by
+    colMap = { id:0, word:1, meaning:2, examples:3, note:4, created_at:5, user_id:6, added_by:7 };
+    dataRows = rows;
+  }
+  const get = (r, key) => (colMap[key] !== undefined && r[colMap[key]] !== undefined) ? r[colMap[key]] : '';
+
+  let skipped = 0;
+  const entries = [];
+  dataRows.forEach(r => {
+    const word = get(r,'word').trim().replace(/\s+/g,' ');
+    const meaning = get(r,'meaning').trim();
+    if(!word || !meaning){ skipped++; return; }
+    const exRaw = get(r,'examples').trim();
+    const examples = exRaw ? exRaw.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+    const note = get(r,'note').trim();
+    entries.push({ word, meaning, examples, note });
+  });
+  return { entries, skipped, total: dataRows.length };
+}
+
+/* ---------- preview ---------- */
+$('checkBtn').onclick = ()=>{
+  const { entries, skipped, total } = toEntries($('raw').value);
+  parsedRows = entries;
+  const box = $('preview'); box.style.display = 'block';
+  let html = `මුළු පේළි: ${total}\nහරි ලෙස කියවුණු වචන: ${entries.length}\n`;
+  if(skipped) html += `word හෝ meaning හිස් නිසා මඟහැරුණු පේළි: ${skipped}\n`;
+  html += '\n--- මුල් වචන 5 (පරීක්ෂා කිරීම සඳහා) ---\n';
+  entries.slice(0,5).forEach((e,i)=>{
+    html += `${i+1}. ${e.word}\n   අර්ථය: ${e.meaning.slice(0,80)}${e.meaning.length>80?'...':''}\n   Examples: ${JSON.stringify(e.examples)}\n   Note: ${e.note || '(නැත)'}\n`;
+  });
+  box.textContent = html;
+  $('importBox').style.display = entries.length ? 'block' : 'none';
+};
+
+/* ---------- import ---------- */
+$('importBtn').onclick = async ()=>{
+  if(!parsedRows.length){ alert('මුලින්ම Preview කරන්න.'); return; }
+  const table = $('table').value;
+  const btn = $('importBtn'); btn.disabled = true;
+  const log = $('importLog'); log.style.display = 'block'; log.textContent = 'ආරම්භ වෙමින්...\n';
+
+  try{
+    // fetch existing word+meaning pairs to avoid duplicates
+    log.textContent += 'දැනට ඇති වචන පරීක්ෂා කරමින්...\n';
+    const existing = new Set();
+    const size = 1000;
+    for(let from = 0; ; from += size){
+      const { data, error } = await sb.from(table).select('word,meaning').range(from, from + size - 1);
+      if(error) throw error;
+      data.forEach(r => existing.add(norm(r.word) + '|' + norm(r.meaning)));
+      if(data.length < size) break;
+    }
+
+    const noteCol = table === 'sinhala_dictionary' ? 'note' : 'sinhala';
+    const fresh = [];
+    let dup = 0;
+    parsedRows.forEach(e => {
+      const k = norm(e.word) + '|' + norm(e.meaning);
+      if(existing.has(k)){ dup++; return; }
+      existing.add(k);
+      const row = { word:e.word, meaning:e.meaning, examples:e.examples,
+        user_id: session.user.id, added_by: session.user.email };
+      row[noteCol] = e.note;
+      fresh.push(row);
+    });
+
+    log.textContent += `අලුතින් එකතු වන වචන: ${fresh.length}, දැනටමත් ඇති නිසා මඟහැරෙන: ${dup}\n\n`;
+    if(!fresh.length){ log.textContent += 'එකතු කිරීමට අලුත් වචනයක් නැත.'; btn.disabled = false; return; }
+
+    let added = 0, failed = 0;
+    const chunk = 200;
+    for(let i = 0; i < fresh.length; i += chunk){
+      const slice = fresh.slice(i, i + chunk);
+      const { error } = await sb.from(table).insert(slice);
+      if(error){
+        failed += slice.length;
+        log.textContent += `❌ පේළි ${i+1}-${i+slice.length}: ${error.message}\n`;
+      }else{
+        added += slice.length;
+        log.textContent += `✓ පේළි ${i+1}-${i+slice.length} save විය\n`;
+      }
+      log.scrollTop = log.scrollHeight;
+    }
+    log.textContent += `\nසම්පූර්ණයි — එකතු කළ: ${added}, අසාර්ථක: ${failed}, මඟහැරුණු (duplicate): ${dup}`;
+  }catch(err){
+    log.textContent += '\n❌ දෝෂයක්: ' + (err.message || err);
+  }finally{
+    btn.disabled = false;
+  }
+};
+
+/* ---------- login ---------- */
+function showLogin(msg){ $('login').classList.remove('hidden'); $('app').style.display = 'none'; $('loginMsg').textContent = msg || ''; }
+function hideLogin(){ $('login').classList.add('hidden'); $('app').style.display = ''; }
+$('loginForm').addEventListener('submit', async ev=>{
+  ev.preventDefault();
+  if(!sb){ showLogin('Supabase library එක load වී නැත.'); return; }
+  const btn = $('loginBtn'); btn.disabled = true; $('loginMsg').textContent = '';
+  try{
+    const { data, error } = await sb.auth.signInWithPassword({ email:$('lEmail').value.trim(), password:$('lPass').value });
+    if(error){ $('loginMsg').textContent = error.message; return; }
+    session = data.session; $('lPass').value = ''; hideLogin();
+  }catch(err){ $('loginMsg').textContent = err.message || String(err); }
+  finally{ btn.disabled = false; }
+});
+async function init(){
+  if(!window.supabase){ showLogin('Supabase library එක load වී නැත.'); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb.auth.onAuthStateChange((event, s)=>{ session = s; if(event === 'SIGNED_OUT') showLogin(''); });
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+  if(session) hideLogin(); else showLogin('');
+}
+init();
+</script>
+</body>
+</html>
