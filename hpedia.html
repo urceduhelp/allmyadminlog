@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>විශ්වකෝෂය</title>
+
+<!-- Supabase client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+<!-- .docx text extraction for bulk import -->
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.2/mammoth.browser.min.js"></script>
+
+<style>
+  :root{
+    --paper: #EDE6D3;
+    --paper-deep: #E2D8BE;
+    --ink: #262119;
+    --ink-soft: #5B5342;
+    --line: #C9BC9C;
+    --maroon: #7A2E2E;
+    --maroon-deep: #5C2020;
+    --ok: #3F6B4A;
+    --white: #FBF9F3;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(0,0,0,0.035) 1px, transparent 0);
+    background-size: 22px 22px;
+    color: var(--ink);
+    font-family: "Iskoola Pota", "Noto Sans Sinhala", Georgia, serif;
+    min-height: 100vh;
+  }
+  .wrap{ max-width: 880px; margin: 0 auto; padding: 36px 20px 80px; }
+
+  header.top{
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 14px; margin-bottom: 28px; flex-wrap: wrap; gap: 10px;
+  }
+  header.top h1{
+    font-family: Georgia, "Noto Serif Sinhala", serif;
+    font-size: 32px; letter-spacing: 0.5px; margin:0; font-weight: 700;
+  }
+  .count-badge{
+    font-family: Georgia, serif; font-size: 14px; color: var(--ink-soft);
+    border: 1px solid var(--line); background: var(--white);
+    padding: 6px 14px; border-radius: 3px;
+  }
+  .count-badge b{ color: var(--maroon); font-size: 17px; }
+
+  .panel{
+    background: var(--white);
+    border: 1px solid var(--line);
+    box-shadow: 3px 3px 0 rgba(38,33,25,0.07);
+    padding: 22px 24px;
+    margin-bottom: 24px;
+  }
+  .panel h2{
+    margin: 0 0 16px; font-size: 16px; font-weight: 700;
+    color: var(--ink); border-bottom: 1px solid var(--line); padding-bottom: 10px;
+  }
+
+  label{ display:block; font-size: 13px; color: var(--ink-soft); margin-bottom: 5px; }
+  input[type=text], textarea, input[type=search]{
+    width: 100%; font-family: inherit; font-size: 15px;
+    padding: 10px 12px; border: 1px solid var(--line); background: var(--paper);
+    color: var(--ink); border-radius: 2px;
+  }
+  textarea{ min-height: 78px; resize: vertical; }
+  input:focus, textarea:focus{ outline: 2px solid var(--maroon); outline-offset: 1px; }
+
+  .field{ margin-bottom: 14px; }
+  .row-btns{ display:flex; gap:10px; flex-wrap: wrap; }
+
+  button{
+    font-family: inherit; font-size: 14px; cursor: pointer;
+    border: 1px solid var(--ink); background: var(--ink); color: var(--white);
+    padding: 10px 18px; border-radius: 2px; transition: background .15s, transform .05s;
+  }
+  button:hover{ background: #3a3226; }
+  button:active{ transform: translateY(1px); }
+  button.secondary{ background: var(--white); color: var(--ink); }
+  button.secondary:hover{ background: var(--paper-deep); }
+  button.danger{ background: var(--white); color: var(--maroon-deep); border-color: var(--maroon-deep); }
+  button.danger:hover{ background: #f4e6e6; }
+  button.small{ padding: 6px 12px; font-size: 13px; }
+  button:disabled{ opacity: .5; cursor: default; }
+
+  .notice{
+    padding: 12px 14px; border-radius: 2px; font-size: 14px; margin-bottom: 14px;
+    display:none;
+  }
+  .notice.show{ display:block; }
+  .notice.warn{ background: #F3E7CE; border: 1px solid #C9A24B; color: #5c4415; }
+  .notice.err{ background: #F6DEDE; border: 1px solid var(--maroon-deep); color: var(--maroon-deep); }
+  .notice.ok{ background: #E1EEE3; border: 1px solid var(--ok); color: #21402a; }
+  .notice .actions{ margin-top: 10px; display:flex; gap:8px; }
+
+  .search-row{ display:flex; gap: 10px; margin-bottom: 14px; }
+  .search-row input{ flex:1; }
+
+  table{ width: 100%; border-collapse: collapse; }
+  thead th{
+    text-align: left; font-size: 12px; letter-spacing: .3px; color: var(--ink-soft);
+    border-bottom: 2px solid var(--ink); padding: 8px 8px;
+  }
+  tbody td{ padding: 12px 8px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 15px; }
+  tbody tr:hover{ background: rgba(122,46,46,0.04); }
+  td.word-cell{ font-weight: 700; width: 26%; }
+  td.actions-cell{ white-space: nowrap; width: 1%; }
+  td.actions-cell button{ margin-left: 6px; }
+
+  .empty-state{ text-align:center; padding: 34px 10px; color: var(--ink-soft); font-size: 14px; }
+
+  .export-row{ display:flex; gap:10px; flex-wrap: wrap; }
+  .export-row button{ background: var(--maroon); border-color: var(--maroon); }
+  .export-row button:hover{ background: var(--maroon-deep); }
+
+  .config-warning{
+    background: #F6DEDE; border: 1px solid var(--maroon-deep); color: var(--maroon-deep);
+    padding: 14px 16px; margin-bottom: 20px; font-size: 14px; border-radius: 2px;
+  }
+  .config-warning code{ background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 2px; }
+
+  .bulk-help{ font-size: 13px; color: var(--ink-soft); margin: -4px 0 14px; line-height: 1.6; }
+  .bulk-help code{ background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 2px; }
+  .file-row{ display:flex; align-items:center; gap:12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .strategy-row{ display:flex; align-items:center; gap:10px; margin-bottom: 16px; flex-wrap: wrap; }
+  select{ font-family: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); background: var(--paper); border-radius: 2px; }
+
+  .preview-wrap{ margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .preview-summary{ font-size: 14px; margin-bottom: 10px; }
+  .preview-summary b.n-new{ color: var(--ok); }
+  .preview-summary b.n-dup{ color: #a06a1c; }
+  .preview-summary b.n-invalid{ color: var(--maroon-deep); }
+  .preview-table-scroll{ max-height: 340px; overflow-y: auto; border: 1px solid var(--line); }
+  table.preview-table{ width:100%; border-collapse: collapse; }
+  table.preview-table thead th{
+    position: sticky; top:0; background: var(--white); border-bottom: 2px solid var(--ink);
+    font-size: 12px; color: var(--ink-soft); padding: 8px; text-align:left;
+  }
+  table.preview-table td{ padding: 8px; border-bottom: 1px solid var(--line); font-size: 13.5px; vertical-align: top; }
+  .status-pill{ display:inline-block; font-size: 11.5px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .status-pill.new{ background:#E1EEE3; color:#21402a; }
+  .status-pill.dup{ background:#F3E7CE; color:#5c4415; }
+  .status-pill.invalid{ background:#F6DEDE; color: var(--maroon-deep); }
+  .status-pill.fill{ background:#DDE6F5; color:#1f3a63; }
+  .preview-summary b.n-fill{ color:#1f3a63; }
+  .suggestions-dropdown .sug-item.needs-info .sug-word{ color:#a06a1c; }
+  .bulk-result{ margin-top: 14px; }
+
+  .suggestions-dropdown{
+    position:absolute; top:100%; left:0; right:0; margin-top:2px;
+    background: var(--white); border: 1px solid var(--line);
+    max-height: 230px; overflow-y:auto; z-index: 30;
+    box-shadow: 0 6px 14px rgba(38,33,25,0.12);
+  }
+  .suggestions-dropdown .sug-item{
+    padding: 9px 12px; cursor:pointer; font-size:14px; border-bottom: 1px solid var(--line);
+  }
+  .suggestions-dropdown .sug-item:last-child{ border-bottom:none; }
+  .suggestions-dropdown .sug-item:hover{ background: var(--paper); }
+  .suggestions-dropdown .sug-item .sug-meaning{
+    display:block; font-size:12px; color: var(--ink-soft); margin-top:2px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .suggestions-dropdown .sug-item.exact .sug-word{ color: var(--maroon-deep); }
+  .suggestions-empty{ padding: 9px 12px; font-size:13px; color: var(--ink-soft); }
+
+  .panel-header-row{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+    border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 16px;
+  }
+  .panel-header-row h2{ border-bottom:none; margin:0; padding:0; }
+
+  .muted{ color: var(--ink-soft); font-size: 13px; }
+  footer{ text-align:center; color: var(--ink-soft); font-size: 12px; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>විශ්වකෝෂය</h1>
+    <div class="count-badge">ඇතුළත් වචන ගණන: <b id="wordCount">0</b></div>
+    <div class="count-badge">Meaning අවශ්‍ය වචන: <b id="incompleteCount">0</b></div>
+  </header>
+
+  <div id="configWarning" class="config-warning" style="display:none;">
+    ⚠️ පහත ගොනුවේ <code>SUPABASE_URL</code> සහ <code>SUPABASE_ANON_KEY</code> අගයන් තවම ඇතුළත් කර නැත.
+    &lt;script&gt; කොටසේ මුලින්ම ඇති <code>CONFIG</code> object එකේ ඒවා ඇතුළත් කර පිටුව reload කරන්න.
+    (Supabase Dashboard → Project Settings → API වෙතින් ලබාගන්න)
+  </div>
+
+  <!-- Add / Edit Form -->
+  <section class="panel">
+    <h2 id="formTitle">නව වචනයක් ඇතුළත් කරන්න</h2>
+
+    <div id="dupNotice" class="notice warn"></div>
+    <div id="statusNotice" class="notice"></div>
+
+    <form id="wordForm">
+      <div class="field" style="position:relative;">
+        <label for="wordInput">වචනය</label>
+        <input type="text" id="wordInput" required autocomplete="off" />
+        <div id="wordSuggestions" class="suggestions-dropdown" style="display:none;"></div>
+      </div>
+      <div class="field">
+        <label for="meaningInput">අර්ථය</label>
+        <textarea id="meaningInput" required></textarea>
+      </div>
+      <div class="row-btns">
+        <button type="submit" id="saveBtn">සුරකින්න</button>
+        <button type="button" id="cancelEditBtn" class="secondary" style="display:none;">අවලංගු කරන්න</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Bulk Upload -->
+  <section class="panel">
+    <h2>වචන තොග වශයෙන් Upload කරන්න (Bulk Import)</h2>
+    <p class="bulk-help">
+      එක් පේළියක් = එක් වචනයක්. <b>වචනය</b> සහ <b>අර්ථය</b> අතර <code>*</code> ලකුණකින් වෙන් කරන්න.<br/>
+      උදා: <code>අං ආභරණය*අංකෙළිය නමැති සිංහ ජන ක්‍රීඩාවට අදාළ වචනයකි...</code><br/>
+      <code>.docx</code> හෝ <code>.txt</code> ගොනුවක් උඩුගත කරන්න, නැත්නම් පහත box එකට කෙලින්ම paste කරන්න.
+    </p>
+
+    <div class="file-row">
+      <input type="file" id="bulkFileInput" accept=".docx,.txt" />
+      <span class="muted" id="bulkFileStatus"></span>
+    </div>
+
+    <div class="field">
+      <textarea id="bulkTextArea" style="min-height: 140px;" placeholder="වචනය*අර්ථය&#10;වචනය*අර්ථය&#10;..."></textarea>
+    </div>
+
+    <div class="strategy-row">
+      <label for="bulkDupStrategy" style="margin:0;">දැනටමත් ඇති වචනයක් හමුවුවහොත්:</label>
+      <select id="bulkDupStrategy">
+        <option value="skip">මඟහරින්න (Skip — පවතින දේ නොවෙනස්ව තබන්න)</option>
+        <option value="replace">අර්ථය Replace කරන්න (යාවත්කාලීන කරන්න)</option>
+      </select>
+    </div>
+
+    <div class="row-btns">
+      <button type="button" id="bulkParseBtn">විශ්ලේෂණය කරන්න (Preview)</button>
+      <button type="button" id="bulkClearBtn" class="secondary">ඉවත් කරන්න</button>
+    </div>
+
+    <div id="bulkPreviewWrap" class="preview-wrap" style="display:none;">
+      <div class="preview-summary" id="bulkSummary"></div>
+      <div class="preview-table-scroll">
+        <table class="preview-table">
+          <thead>
+            <tr><th style="width:26px;"></th><th>වචනය</th><th>අර්ථය</th><th>තත්ත්වය</th></tr>
+          </thead>
+          <tbody id="bulkPreviewBody"></tbody>
+        </table>
+      </div>
+      <div class="row-btns" style="margin-top:14px;">
+        <button type="button" id="bulkConfirmBtn">තහවුරු කර Upload කරන්න</button>
+        <button type="button" id="bulkCancelPreviewBtn" class="secondary">අවලංගු කරන්න</button>
+      </div>
+    </div>
+
+    <div id="bulkResult" class="bulk-result notice"></div>
+  </section>
+
+  <!-- Search + List -->
+  <section class="panel">
+    <div class="panel-header-row">
+      <h2>ඇතුළත් කර ඇති වචන</h2>
+      <button type="button" id="toggleListBtn" class="secondary small">ලැයිස්තුව බලන්න</button>
+    </div>
+    <div id="listContent" style="display:none;">
+      <div class="search-row">
+        <input type="search" id="searchInput" placeholder="වචනයක් හෝ අර්ථයක් සොයන්න..." />
+        <button type="button" id="clearSearchBtn" class="secondary">Clear</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>වචනය</th>
+              <th>අර්ථය</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="wordsTableBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty-state" style="display:none;">වචන කිසිවක් හමු නොවීය.</div>
+    </div>
+  </section>
+
+  <!-- Incomplete words (meaning still = placeholder) -->
+  <section class="panel">
+    <div class="panel-header-row">
+      <h2>Meaning අවශ්‍ය වචන (තොරතුරු ඇතුළත් කරන්න)</h2>
+      <button type="button" id="toggleIncompleteBtn" class="secondary small">ලැයිස්තුව බලන්න</button>
+    </div>
+    <div id="incompleteListContent" style="display:none;">
+      <p class="bulk-help" style="margin-top:0;">
+        Meaning column එකේ <code>තොරතුරු ඇතුළත් කරන්න</code> ලෙසම ඇති වචන — මේවා තවම "පවතින වචන" ලෙස නොසැලකේ,
+        එබැවින් ඉහත Form එකෙන් නැවත එකම වචනය ඇතුළත් කළහොත් duplicate warning එකක් නොපෙන්වා කෙලින්ම meaning එක update කරයි.
+      </p>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>වචනය</th><th></th></tr>
+          </thead>
+          <tbody id="incompleteTableBody"></tbody>
+        </table>
+      </div>
+      <div id="incompleteEmptyState" class="empty-state" style="display:none;">Meaning අවශ්‍ය වචන කිසිවක් නැත.</div>
+    </div>
+  </section>
+
+  <!-- Export -->
+  <section class="panel">
+    <h2>Download කරන්න</h2>
+    <p class="muted" style="margin-top:-6px;">ඇතුළත් කර ඇති සියලුම වචන පහත format වලින් download කර ගත හැක.</p>
+    <div class="export-row">
+      <button type="button" id="exportWord">Word (.doc)</button>
+      <button type="button" id="exportExcel">Excel (.xlsx)</button>
+      <button type="button" id="exportPdf">PDF</button>
+      <button type="button" id="exportCsv">CSV</button>
+      <button type="button" id="exportJson">JSON</button>
+    </div>
+  </section>
+
+  <footer>විශ්වකෝෂය — Supabase සමඟ සම්බන්ධිත</footer>
+</div>
+
+<script>
+/* =========================================================
+   CONFIG — ඔබේ Supabase Project විස්තර මෙහි ඇතුළත් කරන්න
+   Project Settings → API → Project URL / anon public key
+========================================================= */
+const CONFIG = {
+  SUPABASE_URL: "https://jcijglwpkfluyzrltimk.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjaWpnbHdwa2ZsdXl6cmx0aW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MzU3OTUsImV4cCI6MjA4MjQxMTc5NX0.dvT8OiyVEiYn_DhkMakmSq1Vvr4REDr0kYPnyqCtWHs"
+};
+/* ========================================================= */
+
+let supabaseClient = null;
+let editingId = null;          // currently editing record's id (null = new entry mode)
+let pendingDuplicate = null;    // duplicate record found on submit, awaiting user decision
+let allWords = [];              // local cache for export + search fallback
+
+const PLACEHOLDER_MEANING = 'තොරතුරු ඇතුළත් කරන්න';
+function isPlaceholder(meaning){ return (meaning || '').trim() === PLACEHOLDER_MEANING; }
+
+const el = (id) => document.getElementById(id);
+
+function init(){
+  const notConfigured =
+    CONFIG.SUPABASE_URL.includes("YOUR-PROJECT-REF") ||
+    CONFIG.SUPABASE_ANON_KEY.includes("YOUR-ANON-PUBLIC-KEY");
+
+  if(notConfigured){
+    el('configWarning').style.display = 'block';
+    el('wordForm').querySelector('button[type=submit]').disabled = true;
+    return;
+  }
+
+  supabaseClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+  loadWords();
+}
+
+/* ---------- Data loading ---------- */
+async function loadWords(searchTerm){
+  let query = supabaseClient.from('words').select('*').order('word', { ascending: true });
+  if(searchTerm){
+    query = query.or(`word.ilike.%${searchTerm}%,meaning.ilike.%${searchTerm}%`);
+  }
+  const { data, error } = await query;
+  if(error){
+    showStatus('err', 'දත්ත load කිරීමේදී දෝෂයක්: ' + error.message);
+    return;
+  }
+  allWords = data || [];
+  renderTable(allWords);
+  updateCount();
+  if(el('incompleteListContent').style.display !== 'none'){
+    loadIncompleteWords();
+  }
+}
+
+async function updateCount(){
+  const { count, error } = await supabaseClient.from('words').select('*', { count: 'exact', head: true });
+  if(!error && count !== null){
+    el('wordCount').textContent = count;
+  }
+  const { count: incompleteCount, error: incompleteErr } = await supabaseClient
+    .from('words')
+    .select('*', { count: 'exact', head: true })
+    .eq('meaning', PLACEHOLDER_MEANING);
+  if(!incompleteErr && incompleteCount !== null){
+    el('incompleteCount').textContent = incompleteCount;
+  }
+}
+
+/* ---------- Incomplete (placeholder meaning) words list ---------- */
+async function loadIncompleteWords(){
+  const { data, error } = await supabaseClient
+    .from('words')
+    .select('*')
+    .eq('meaning', PLACEHOLDER_MEANING)
+    .order('word', { ascending: true });
+  if(error){
+    showStatus('err', 'Meaning අවශ්‍ය වචන load කිරීමේදී දෝෂයක්: ' + error.message);
+    return;
+  }
+  renderIncompleteTable(data || []);
+}
+
+function renderIncompleteTable(rows){
+  const body = el('incompleteTableBody');
+  body.innerHTML = '';
+  if(!rows.length){
+    el('incompleteEmptyState').style.display = 'block';
+    return;
+  }
+  el('incompleteEmptyState').style.display = 'none';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="word-cell"></td>
+      <td class="actions-cell">
+        <button type="button" class="small" data-act="fill">Meaning එක එකතු කරන්න</button>
+        <button type="button" class="danger small" data-act="delete">මකන්න</button>
+      </td>`;
+    tr.querySelector('.word-cell').textContent = r.word;
+    tr.querySelector('[data-act=fill]').addEventListener('click', () => startEdit(r));
+    tr.querySelector('[data-act=delete]').addEventListener('click', () => deleteWord(r));
+    body.appendChild(tr);
+  });
+}
+
+el('toggleIncompleteBtn').addEventListener('click', async () => {
+  const content = el('incompleteListContent');
+  const isHidden = content.style.display === 'none';
+  content.style.display = isHidden ? 'block' : 'none';
+  el('toggleIncompleteBtn').textContent = isHidden ? 'ලැයිස්තුව සඟවන්න' : 'ලැයිස්තුව බලන්න';
+  if(isHidden) await loadIncompleteWords();
+});
+
+function renderTable(rows){
+  const body = el('wordsTableBody');
+  body.innerHTML = '';
+  if(!rows.length){
+    el('emptyState').style.display = 'block';
+    return;
+  }
+  el('emptyState').style.display = 'none';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="word-cell"></td>
+      <td class="meaning-cell"></td>
+      <td class="actions-cell">
+        <button type="button" class="secondary small" data-act="edit">සංස්කරණය</button>
+        <button type="button" class="danger small" data-act="delete">මකන්න</button>
+      </td>`;
+    tr.querySelector('.word-cell').textContent = r.word;
+    tr.querySelector('.meaning-cell').textContent = r.meaning;
+    tr.querySelector('[data-act=edit]').addEventListener('click', () => startEdit(r));
+    tr.querySelector('[data-act=delete]').addEventListener('click', () => deleteWord(r));
+    body.appendChild(tr);
+  });
+}
+
+/* ---------- Notices ---------- */
+function showStatus(type, msg){
+  const box = el('statusNotice');
+  box.className = 'notice show ' + type;
+  box.textContent = msg;
+  if(type === 'ok'){
+    setTimeout(() => { box.className = 'notice'; }, 3500);
+  }
+}
+function clearStatus(){ el('statusNotice').className = 'notice'; }
+
+function showDuplicateNotice(existing){
+  pendingDuplicate = existing;
+  const box = el('dupNotice');
+  box.className = 'notice warn show';
+  box.innerHTML = `
+    <div>මෙම වචනය <b>"${escapeHtml(existing.word)}"</b> දැනටමත් ඇතුළත් කර ඇත.
+    දැනට ඇති අර්ථය: <i>${escapeHtml(existing.meaning)}</i></div>
+    <div class="actions">
+      <button type="button" class="small" id="dupReplaceBtn">පවතින එක Replace කරන්න</button>
+      <button type="button" class="secondary small" id="dupEditBtn">සංස්කරණය කරන්න (Edit)</button>
+      <button type="button" class="secondary small" id="dupCancelBtn">අවලංගු කරන්න</button>
+    </div>`;
+  el('dupReplaceBtn').addEventListener('click', () => replaceDuplicate());
+  el('dupEditBtn').addEventListener('click', () => { startEdit(existing); hideDuplicateNotice(); });
+  el('dupCancelBtn').addEventListener('click', hideDuplicateNotice);
+}
+function hideDuplicateNotice(){
+  pendingDuplicate = null;
+  el('dupNotice').className = 'notice';
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- Live suggestions while typing the word (early duplicate detection) ---------- */
+let suggestDebounce;
+const wordSuggestionsBox = el('wordSuggestions');
+
+el('wordInput').addEventListener('input', () => {
+  if(editingId) return; // no suggestions while editing an existing record
+  hideDuplicateNotice();
+  const term = el('wordInput').value.trim();
+  clearTimeout(suggestDebounce);
+  if(!term){
+    hideSuggestions();
+    return;
+  }
+  suggestDebounce = setTimeout(() => fetchSuggestions(term), 220);
+});
+
+el('wordInput').addEventListener('focus', () => {
+  const term = el('wordInput').value.trim();
+  if(term && !editingId) fetchSuggestions(term);
+});
+
+document.addEventListener('click', (e) => {
+  if(!wordSuggestionsBox.contains(e.target) && e.target !== el('wordInput')){
+    hideSuggestions();
+  }
+});
+
+async function fetchSuggestions(term){
+  if(!supabaseClient) return;
+  const { data, error } = await supabaseClient
+    .from('words')
+    .select('id,word,meaning')
+    .ilike('word', `%${term}%`)
+    .order('word', { ascending: true })
+    .limit(8);
+  if(error || !data){ hideSuggestions(); return; }
+  renderSuggestions(data, term);
+
+  // Placeholder-meaning ("තොරතුරු ඇතුළත් කරන්න") records are NOT treated as existing/duplicate words
+  const exact = data.find(r => r.word.toLowerCase() === term.toLowerCase() && !isPlaceholder(r.meaning));
+  if(exact) showDuplicateNotice(exact);
+}
+
+function renderSuggestions(rows, term){
+  if(!rows.length){
+    wordSuggestionsBox.innerHTML = `<div class="suggestions-empty">ගැලපෙන වචන හමු නොවීය — මෙය අලුත් වචනයක් විය හැක.</div>`;
+    wordSuggestionsBox.style.display = 'block';
+    return;
+  }
+  wordSuggestionsBox.innerHTML = rows.map(r => {
+    const isExact = r.word.toLowerCase() === term.toLowerCase();
+    const placeholder = isPlaceholder(r.meaning);
+    let cls = '', label = '';
+    if(isExact && placeholder){ cls = 'needs-info'; label = ' — Meaning අවශ්‍යයි'; }
+    else if(isExact){ cls = 'exact'; label = ' — දැනටමත් ඇත'; }
+    return `
+      <div class="sug-item ${cls}" data-id="${r.id}">
+        <span class="sug-word">${escapeHtml(r.word)}${label}</span>
+        <span class="sug-meaning">${escapeHtml(r.meaning)}</span>
+      </div>`;
+  }).join('');
+  wordSuggestionsBox.querySelectorAll('.sug-item').forEach((node, i) => {
+    node.addEventListener('click', () => {
+      const record = rows[i];
+      el('wordInput').value = record.word;
+      hideSuggestions();
+      if(isPlaceholder(record.meaning)){
+        // treat as not-yet-existing: just let the user type the real meaning normally
+        hideDuplicateNotice();
+        el('meaningInput').focus();
+      } else {
+        showDuplicateNotice(record);
+      }
+    });
+  });
+  wordSuggestionsBox.style.display = 'block';
+}
+
+function hideSuggestions(){
+  wordSuggestionsBox.style.display = 'none';
+  wordSuggestionsBox.innerHTML = '';
+}
+
+/* ---------- Add / Edit / Duplicate logic ---------- */
+el('wordForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearStatus();
+  const word = el('wordInput').value.trim();
+  const meaning = el('meaningInput').value.trim();
+  if(!word || !meaning) return;
+
+  if(editingId){
+    await saveUpdate(editingId, word, meaning);
+    return;
+  }
+
+  // check duplicate (case-insensitive) before inserting
+  const { data: existing, error } = await supabaseClient
+    .from('words')
+    .select('*')
+    .ilike('word', word)
+    .maybeSingle();
+
+  if(error){
+    showStatus('err', 'පරීක්ෂා කිරීමේදී දෝෂයක්: ' + error.message);
+    return;
+  }
+  if(existing){
+    if(isPlaceholder(existing.meaning)){
+      // Not treated as an existing word — silently fill in the real meaning.
+      await saveUpdate(existing.id, existing.word, meaning, 'වචනයට අර්ථය සාර්ථකව එකතු කරන ලදී.');
+      return;
+    }
+    showDuplicateNotice(existing);
+    return;
+  }
+
+  const { error: insertErr } = await supabaseClient.from('words').insert({ word, meaning });
+  if(insertErr){
+    showStatus('err', 'සුරැකීමේදී දෝෂයක්: ' + insertErr.message);
+    return;
+  }
+  showStatus('ok', 'වචනය සාර්ථකව ඇතුළත් කරන ලදී.');
+  resetForm();
+  loadWords(el('searchInput').value.trim());
+});
+
+async function replaceDuplicate(){
+  if(!pendingDuplicate) return;
+  const meaning = el('meaningInput').value.trim();
+  if(!meaning){
+    showStatus('warn', 'Replace කිරීමට පෙර අර්ථය ඇතුළත් කරන්න.');
+    el('meaningInput').focus();
+    return;
+  }
+  await saveUpdate(pendingDuplicate.id, pendingDuplicate.word, meaning);
+  hideDuplicateNotice();
+}
+
+async function saveUpdate(id, word, meaning, successMessage){
+  const { error } = await supabaseClient.from('words').update({ word, meaning }).eq('id', id);
+  if(error){
+    showStatus('err', 'යාවත්කාලීන කිරීමේදී දෝෂයක්: ' + error.message);
+    return;
+  }
+  showStatus('ok', successMessage || 'වචනය සාර්ථකව යාවත්කාලීන කරන ලදී.');
+  resetForm();
+  loadWords(el('searchInput').value.trim());
+}
+
+function startEdit(record){
+  editingId = record.id;
+  const placeholder = isPlaceholder(record.meaning);
+  el('wordInput').value = record.word;
+  el('meaningInput').value = placeholder ? '' : record.meaning;
+  el('formTitle').textContent = placeholder
+    ? '"' + record.word + '" සඳහා Meaning එක ඇතුළත් කරන්න'
+    : '"' + record.word + '" සංස්කරණය කරන්න';
+  el('saveBtn').textContent = 'යාවත්කාලීන කරන්න';
+  el('cancelEditBtn').style.display = 'inline-block';
+  hideDuplicateNotice();
+  hideSuggestions();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if(placeholder) el('meaningInput').focus();
+}
+
+function resetForm(){
+  editingId = null;
+  el('wordForm').reset();
+  el('formTitle').textContent = 'නව වචනයක් ඇතුළත් කරන්න';
+  el('saveBtn').textContent = 'සුරකින්න';
+  el('cancelEditBtn').style.display = 'none';
+  hideDuplicateNotice();
+  hideSuggestions();
+}
+el('cancelEditBtn').addEventListener('click', resetForm);
+
+async function deleteWord(record){
+  if(!confirm(`"${record.word}" මකා දැමීමට විශ්වාසද?`)) return;
+  const { error } = await supabaseClient.from('words').delete().eq('id', record.id);
+  if(error){
+    showStatus('err', 'මකා දැමීමේදී දෝෂයක්: ' + error.message);
+    return;
+  }
+  showStatus('ok', 'වචනය මකා දමන ලදී.');
+  if(editingId === record.id) resetForm();
+  loadWords(el('searchInput').value.trim());
+}
+
+/* ---------- Search ---------- */
+el('toggleListBtn').addEventListener('click', () => {
+  const content = el('listContent');
+  const isHidden = content.style.display === 'none';
+  content.style.display = isHidden ? 'block' : 'none';
+  el('toggleListBtn').textContent = isHidden ? 'ලැයිස්තුව සඟවන්න' : 'ලැයිස්තුව බලන්න';
+});
+
+let searchDebounce;
+el('searchInput').addEventListener('input', () => {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => loadWords(el('searchInput').value.trim()), 300);
+});
+el('clearSearchBtn').addEventListener('click', () => {
+  el('searchInput').value = '';
+  loadWords();
+});
+
+/* ---------- Export ---------- */
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+el('exportCsv').addEventListener('click', () => {
+  const rows = [['වචනය','අර්ථය'], ...allWords.map(w => [w.word, w.meaning])];
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  downloadBlob(new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }), 'vishwakoshaya.csv');
+});
+
+el('exportJson').addEventListener('click', () => {
+  const json = JSON.stringify(allWords.map(w => ({ word: w.word, meaning: w.meaning })), null, 2);
+  downloadBlob(new Blob([json], { type: 'application/json' }), 'vishwakoshaya.json');
+});
+
+el('exportExcel').addEventListener('click', () => {
+  const wsData = [['වචනය','අර්ථය'], ...allWords.map(w => [w.word, w.meaning])];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{ wch: 24 }, { wch: 60 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'විශ්වකෝෂය');
+  XLSX.writeFile(wb, 'vishwakoshaya.xlsx');
+});
+
+el('exportPdf').addEventListener('click', () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text('Encyclopedia Word List', 14, 16);
+  doc.autoTable({
+    startY: 22,
+    head: [['Word', 'Meaning']],
+    body: allWords.map(w => [w.word, w.meaning]),
+    styles: { fontSize: 10, cellWidth: 'wrap' },
+    columnStyles: { 0: { cellWidth: 45 }, 1: { cellWidth: 130 } }
+  });
+  doc.save('vishwakoshaya.pdf');
+});
+
+el('exportWord').addEventListener('click', () => {
+  const rowsHtml = allWords.map(w =>
+    `<tr><td style="padding:6px;border:1px solid #999;">${escapeHtml(w.word)}</td>
+         <td style="padding:6px;border:1px solid #999;">${escapeHtml(w.meaning)}</td></tr>`
+  ).join('');
+  const html = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset="utf-8"><title>Encyclopedia</title></head>
+    <body>
+      <h2>Encyclopedia Word List</h2>
+      <table style="border-collapse:collapse;width:100%;">
+        <tr><th style="padding:6px;border:1px solid #999;text-align:left;">Word</th>
+            <th style="padding:6px;border:1px solid #999;text-align:left;">Meaning</th></tr>
+        ${rowsHtml}
+      </table>
+    </body></html>`;
+  downloadBlob(new Blob(['\ufeff', html], { type: 'application/msword' }), 'vishwakoshaya.doc');
+});
+
+/* =========================================================
+   Bulk Import (word*meaning per line)
+========================================================= */
+let bulkGrouped = [];   // parsed + grouped rows awaiting confirmation
+let bulkInvalidCount = 0;
+
+el('bulkFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  el('bulkFileStatus').textContent = 'කියවෙමින්...';
+  try{
+    if(file.name.toLowerCase().endsWith('.docx')){
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      el('bulkTextArea').value = result.value;
+    } else {
+      const text = await file.text();
+      el('bulkTextArea').value = text;
+    }
+    el('bulkFileStatus').textContent = `"${file.name}" load කරන ලදී.`;
+  }catch(err){
+    el('bulkFileStatus').textContent = 'ගොනුව කියවීමේදී දෝෂයක්: ' + err.message;
+  }
+});
+
+el('bulkClearBtn').addEventListener('click', () => {
+  el('bulkTextArea').value = '';
+  el('bulkFileInput').value = '';
+  el('bulkFileStatus').textContent = '';
+  el('bulkPreviewWrap').style.display = 'none';
+  el('bulkResult').className = 'bulk-result notice';
+});
+
+el('bulkCancelPreviewBtn').addEventListener('click', () => {
+  el('bulkPreviewWrap').style.display = 'none';
+});
+
+function parseBulkLines(raw){
+  const lines = raw.split(/\r?\n/);
+  const valid = [];
+  let invalid = 0;
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if(!trimmed) return;
+    const idx = trimmed.indexOf('*');
+    if(idx === -1){ invalid++; return; }
+    const word = trimmed.slice(0, idx).trim();
+    const meaning = trimmed.slice(idx + 1).trim();
+    if(!word || !meaning){ invalid++; return; }
+    valid.push({ word, meaning });
+  });
+  return { valid, invalid };
+}
+
+el('bulkParseBtn').addEventListener('click', async () => {
+  const raw = el('bulkTextArea').value;
+  const { valid, invalid } = parseBulkLines(raw);
+  bulkInvalidCount = invalid;
+
+  if(!valid.length){
+    el('bulkResult').className = 'bulk-result notice err show';
+    el('bulkResult').textContent = 'වලංගු පේළියක් හමු නොවුණි. word*meaning format එකෙන් තිබෙනවාදැයි පරීක්ෂා කරන්න.';
+    el('bulkPreviewWrap').style.display = 'none';
+    return;
+  }
+
+  // Collapse duplicates within the pasted batch itself — keep the LAST occurrence
+  const byLowerWord = new Map();
+  valid.forEach(row => byLowerWord.set(row.word.toLowerCase(), row));
+  const collapsedRows = Array.from(byLowerWord.values());
+  const collapsedInBatch = valid.length - collapsedRows.length;
+
+  // Fetch all existing words to check against DB
+  el('bulkResult').className = 'bulk-result notice';
+  const { data: existingRows, error } = await supabaseClient.from('words').select('id,word,meaning');
+  if(error){
+    el('bulkResult').className = 'bulk-result notice err show';
+    el('bulkResult').textContent = 'පවතින වචන ලබාගැනීමේදී දෝෂයක්: ' + error.message;
+    return;
+  }
+  const existingMap = new Map();
+  (existingRows || []).forEach(r => existingMap.set(r.word.toLowerCase(), r));
+
+  const strategy = el('bulkDupStrategy').value; // 'skip' | 'replace'
+  bulkGrouped = collapsedRows.map(row => {
+    const existing = existingMap.get(row.word.toLowerCase());
+    if(existing && isPlaceholder(existing.meaning)){
+      // Placeholder-meaning words are NOT treated as existing — always auto-completed.
+      return {
+        word: row.word, meaning: row.meaning, status: 'fill',
+        existingId: existing.id, existingWord: existing.word,
+        defaultChecked: true
+      };
+    }
+    if(existing){
+      return {
+        word: row.word, meaning: row.meaning, status: 'dup',
+        existingId: existing.id, existingWord: existing.word,
+        defaultChecked: strategy === 'replace'
+      };
+    }
+    return { word: row.word, meaning: row.meaning, status: 'new', defaultChecked: true };
+  });
+
+  renderBulkPreview(collapsedInBatch);
+});
+
+function renderBulkPreview(collapsedInBatch){
+  const body = el('bulkPreviewBody');
+  body.innerHTML = '';
+  let newCount = 0, dupCount = 0, fillCount = 0;
+
+  const pillFor = (status) => {
+    if(status === 'new') return '<span class="status-pill new">අලුත්</span>';
+    if(status === 'fill') return '<span class="status-pill fill">Meaning අවශ්‍ය විය - සම්පූර්ණ වේ</span>';
+    return '<span class="status-pill dup">දැනටමත් ඇත</span>';
+  };
+
+  bulkGrouped.forEach((row, i) => {
+    if(row.status === 'new') newCount++;
+    else if(row.status === 'fill') fillCount++;
+    else dupCount++;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" data-i="${i}" ${row.defaultChecked ? 'checked' : ''}/></td>
+      <td class="word-cell"></td>
+      <td class="meaning-cell"></td>
+      <td>${pillFor(row.status)}</td>`;
+    tr.querySelector('.word-cell').textContent = row.word;
+    tr.querySelector('.meaning-cell').textContent = row.meaning;
+    body.appendChild(tr);
+  });
+
+  const parts = [
+    `මුළු පේළි: <b>${bulkGrouped.length}</b>`,
+    `<b class="n-new">${newCount}</b> අලුත් වචන`,
+    `<b class="n-dup">${dupCount}</b> දැනටමත් ඇති වචන`
+  ];
+  if(fillCount > 0) parts.push(`<b class="n-fill">${fillCount}</b> Meaning අවශ්‍ය වචන සම්පූර්ණ වේ`);
+  if(collapsedInBatch > 0) parts.push(`(file එකේම නැවත සඳහන් වූ වචන ${collapsedInBatch}ක් - අවසාන අගය පමණක් රඳවා ඇත)`);
+  if(bulkInvalidCount > 0) parts.push(`<b class="n-invalid">${bulkInvalidCount}</b> පේළි * ලකුණකින් තොරව/හිස්ව ඇති නිසා නොසලකා හරින ලදී`);
+  el('bulkSummary').innerHTML = parts.join(' &nbsp;•&nbsp; ');
+
+  el('bulkPreviewWrap').style.display = 'block';
+  el('bulkResult').className = 'bulk-result notice';
+}
+
+el('bulkConfirmBtn').addEventListener('click', async () => {
+  const checkboxes = el('bulkPreviewBody').querySelectorAll('input[type=checkbox]');
+  const insertBatch = [];
+  const updateBatch = [];
+
+  checkboxes.forEach(cb => {
+    if(!cb.checked) return;
+    const row = bulkGrouped[Number(cb.dataset.i)];
+    if(row.status === 'new'){
+      insertBatch.push({ word: row.word, meaning: row.meaning });
+    } else {
+      updateBatch.push({ id: row.existingId, word: row.existingWord, meaning: row.meaning });
+    }
+  });
+
+  if(!insertBatch.length && !updateBatch.length){
+    el('bulkResult').className = 'bulk-result notice warn show';
+    el('bulkResult').textContent = 'Upload කිරීමට කිසිවක් තෝරා නැත.';
+    return;
+  }
+
+  el('bulkConfirmBtn').disabled = true;
+  el('bulkConfirmBtn').textContent = 'Upload වෙමින්...';
+
+  let insertedCount = 0, updatedCount = 0;
+  const errors = [];
+
+  if(insertBatch.length){
+    // Supabase insert accepts an array of objects for batch insert
+    const { error, data } = await supabaseClient.from('words').insert(insertBatch).select('id');
+    if(error) errors.push('Insert දෝෂය: ' + error.message);
+    else insertedCount = (data || insertBatch).length;
+  }
+
+  if(updateBatch.length){
+    const results = await Promise.all(updateBatch.map(row =>
+      supabaseClient.from('words').update({ meaning: row.meaning }).eq('id', row.id)
+    ));
+    results.forEach(r => { if(r.error) errors.push('Update දෝෂය (' + r.error.message + ')'); else updatedCount++; });
+  }
+
+  el('bulkConfirmBtn').disabled = false;
+  el('bulkConfirmBtn').textContent = 'තහවුරු කර Upload කරන්න';
+
+  el('bulkResult').className = 'bulk-result notice ' + (errors.length ? 'err' : 'ok') + ' show';
+  el('bulkResult').innerHTML =
+    `<div>අලුතින් ඇතුළත් කළා: <b>${insertedCount}</b> &nbsp;•&nbsp; යාවත්කාලීන කළා: <b>${updatedCount}</b></div>` +
+    (errors.length ? `<div style="margin-top:6px;">${errors.map(escapeHtml).join('<br/>')}</div>` : '');
+
+  if(!errors.length){
+    el('bulkTextArea').value = '';
+    el('bulkFileInput').value = '';
+    el('bulkFileStatus').textContent = '';
+    el('bulkPreviewWrap').style.display = 'none';
+  }
+
+  loadWords(el('searchInput').value.trim());
+});
+
+init();
+</script>
+</body>
+</html>
