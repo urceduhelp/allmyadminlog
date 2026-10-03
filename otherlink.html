@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Amila EduHelp – මෙවලම් මධ්‍යස්ථානය</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7fb;--card:#fff;--text:#1d2433;--muted:#667085;--line:#e3e6ee;--accent:#3b5bdb;--accent-t:#fff;--chip:#eef2ff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151d;--card:#1b2030;--text:#e8ebf3;--muted:#98a2b3;--line:#2b3247;--accent:#7c93ff;--accent-t:#0f1320;--chip:#242b45}}
+:root[data-theme="dark"]{--bg:#12151d;--card:#1b2030;--text:#e8ebf3;--muted:#98a2b3;--line:#2b3247;--accent:#7c93ff;--accent-t:#0f1320;--chip:#242b45}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans Sinhala","Iskoola Pota",system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+h1{font-size:1.4rem;margin:0}
+.sub{color:var(--muted);font-size:.9rem;margin:2px 0 0}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+input,select,button{font:inherit;color:var(--text)}
+input,select{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+#q{flex:1;min-width:180px}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px}
+button.primary{background:var(--accent);color:var(--accent-t);border-color:var(--accent);font-weight:600}
+h2{font-size:1rem;margin:22px 0 10px;color:var(--muted);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.card{position:relative;display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;text-decoration:none;color:var(--text);transition:transform .12s,border-color .12s}
+.card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.card b{display:block;font-size:.98rem;padding-right:22px}
+.card small{display:block;color:var(--muted);font-size:.75rem;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{display:inline-block;background:var(--chip);color:var(--accent);font-size:.68rem;padding:1px 8px;border-radius:99px;margin-top:6px}
+.del{position:absolute;top:6px;right:6px;border:0;background:transparent;padding:2px 7px;color:var(--muted);font-size:1rem;border-radius:8px}
+.del:hover{color:#d92d20}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);width:min(420px,92vw);padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog label{display:block;font-size:.85rem;color:var(--muted);margin:12px 0 4px}
+dialog input,dialog select{width:100%}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.err{color:#d92d20;font-size:.82rem;min-height:1.2em;margin-top:8px}
+.empty{color:var(--muted);text-align:center;padding:30px 0}
+.note{color:var(--muted);font-size:.78rem;margin-top:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>🎓 Amila EduHelp මෙවලම්</h1>
+    <p class="sub">සියලු මෙවලම් එකම තැනකින් – <span id="count"></span></p>
+  </div>
+  <button class="primary" id="addBtn">＋ අලුත් link එකක්</button>
+</header>
+<div class="bar"><input id="q" type="search" placeholder="🔍 නමින් සොයන්න..."></div>
+<div id="out"></div>
+<p class="note">ඔබ එකතු කරන link මෙම උපාංගයේ බ්‍රවුසරයේ පමණක් සුරැකේ. ඒවා මකා දැමීමට කාඩ්පතේ ✕ ඔබන්න.</p>
+</div>
+
+<dialog id="dlg">
+  <h3 style="margin:0">අලුත් link එකක් එක් කරන්න</h3>
+  <label for="n">නම</label><input id="n" placeholder="උදා: Physics Lab">
+  <label for="u">Link (URL)</label><input id="u" type="url" placeholder="https://...">
+  <label for="c">කාණ්ඩය</label><select id="c"></select>
+  <div class="err" id="err"></div>
+  <div class="row"><button id="cancel">අවලංගු</button><button class="primary" id="save">සුරකින්න</button></div>
+</dialog>
+
+<script>
+var A="https://amilaeduhelp.github.io/",U="https://urceduhelp.github.io/";
+var BASE=[
+["පන්ති කළමනාකරණය","Class M",A+"My-class-management/"],
+["පන්ති කළමනාකරණය","Class report",A+"classreport/"],
+["පන්ති කළමනාකරණය","Dod",U+"cdc-dodangoda/"],
+["ශබ්දකෝෂ හා විශ්වකෝෂ","Dictionary (Search)",A+"sinhala-dictionary-search/"],
+["ශබ්දකෝෂ හා විශ්වකෝෂ","Dictionary-S (Admin)",A+"sinhala-dictionary/"],
+["ශබ්දකෝෂ හා විශ්වකෝෂ","Dictionary-E (Admin)",A+"vocabulary/"],
+["ශබ්දකෝෂ හා විශ්වකෝෂ","Guruge Art-Pedia",A+"guruge-art-pedia/"],
+["ශබ්දකෝෂ හා විශ්වකෝෂ","History Encyclopedia",A+"-2025/indpedia.html"],
+["ශබ්දකෝෂ හා විශ්වකෝෂ","History Teachers",U+"Teachers-Alliance-for-Technology-and-Innovation/"],
+["විද්‍යාව හා ගණිතය","Chemistry Explorer",A+"chemexplore/"],
+["විද්‍යාව හා ගණිතය","Chemistry Lab",A+"compound-lab/"],
+["විද්‍යාව හා ගණිතය","Math Explorer",A+"mathsexplorer/"],
+["සිතියම්","Smart Map",A+"smart-map/"],
+["සිතියම්","Smart Map (Geo Sketch)",U+"geo-sketch-map-make/"],
+["අධ්‍යයන මෙවලම්","LearnX",A+"-2025/entrence.html"],
+["අධ්‍යයන මෙවලම්","My Books",A+"book-price/"],
+["අධ්‍යයන මෙවලම්","Smart MCQ Solver",A+"smsans/"],
+["අධ්‍යයන මෙවලම්","Bibliography Generator",A+"bibliographies/"],
+["අධ්‍යයන මෙවලම්","Edu calendar",A+"edu-calendar/"],
+["වෘත්තීය මග පෙන්වීම","Career test",A+"Career-key/"],
+["වෘත්තීය මග පෙන්වීම","Course Finder",A+"findcourse/"]
+];
+var KEY="eduhub_custom_v1",custom=[];
+try{custom=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){custom=[]}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(custom))}catch(e){}}
+var $=function(i){return document.getElementById(i)};
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function cats(){var l=[];BASE.forEach(function(b){if(l.indexOf(b[0])<0)l.push(b[0])});custom.forEach(function(b){if(l.indexOf(b[0])<0)l.push(b[0])});return l}
+function render(){
+  var q=$("q").value.trim().toLowerCase(),all=[];
+  BASE.forEach(function(b){all.push({c:b[0],n:b[1],u:b[2],i:-1})});
+  custom.forEach(function(b,i){all.push({c:b[0],n:b[1],u:b[2],i:i})});
+  $("count").textContent=all.length+" මෙවලම්";
+  var list=all.filter(function(x){return !q||x.n.toLowerCase().indexOf(q)>=0||x.c.indexOf(q)>=0});
+  if(!list.length){$("out").innerHTML='<div class="empty">කිසිවක් හමු නොවීය.</div>';return}
+  var h="";
+  cats().forEach(function(c){
+    var g=list.filter(function(x){return x.c===c});if(!g.length)return;
+    h+="<h2>"+esc(c)+"</h2><div class='grid'>";
+    g.forEach(function(x){
+      var host="";try{host=new URL(x.u).hostname}catch(e){}
+      h+="<a class='card' target='_blank' rel='noopener noreferrer' href='"+esc(x.u)+"'>"+(x.i>=0?"<button class='del' data-i='"+x.i+"' title='මකන්න'>✕</button>":"")+"<b>"+esc(x.n)+"</b><small>"+esc(host)+"</small>"+(x.i>=0?"<span class='tag'>මා එක් කළ</span>":"")+"</a>";
+    });
+    h+="</div>";
+  });
+  $("out").innerHTML=h;
+}
+$("out").addEventListener("click",function(e){
+  var d=e.target.closest(".del");if(!d)return;
+  e.preventDefault();e.stopPropagation();
+  if(confirm("මෙම link එක මකන්නද?")){custom.splice(+d.dataset.i,1);persist();render()}
+});
+$("q").addEventListener("input",render);
+function fillCats(){
+  $("c").innerHTML=cats().map(function(c){return"<option>"+esc(c)+"</option>"}).join("")+"<option value='__new'>＋ අලුත් කාණ්ඩයක්...</option>";
+}
+$("c").addEventListener("change",function(){
+  if($("c").value==="__new"){var n=prompt("අලුත් කාණ්ඩයේ නම:");
+    if(n&&n.trim()){var o=document.createElement("option");o.textContent=n.trim();$("c").insertBefore(o,$("c").lastChild);$("c").value=n.trim()}
+    else $("c").selectedIndex=0}
+});
+$("addBtn").onclick=function(){fillCats();$("n").value="";$("u").value="";$("err").textContent="";$("dlg").showModal()};
+$("cancel").onclick=function(){$("dlg").close()};
+$("save").onclick=function(){
+  var n=$("n").value.trim(),u=$("u").value.trim();
+  if(u&&!/^https?:\/\//i.test(u))u="https://"+u;
+  try{var p=new URL(u);if(!/^https?:$/.test(p.protocol))throw 0}catch(e){$("err").textContent="කරුණාකර නිවැරදි link එකක් ඇතුළත් කරන්න.";return}
+  if(!n){$("err").textContent="නමක් ඇතුළත් කරන්න.";return}
+  custom.push([$("c").value,n,u]);persist();$("dlg").close();render();
+};
+render();
+</script>
+</body>
+</html>
