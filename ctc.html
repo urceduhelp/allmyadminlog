@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>පරිපාලක පිටුව-Admin Page | විෂයානුබද්ධ වාග් මාලාව-Subject-related Vocabulary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;500;600;700;800&family=Noto+Serif+Sinhala:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest-900:#0f2e21;
+    --forest-800:#163d2c;
+    --forest-700:#1b4332;
+    --forest-600:#2d6a4f;
+    --forest-500:#3f8161;
+    --mint-300:#95d5b2;
+    --mint-200:#b7e4c7;
+    --mint-100:#d9f2e4;
+    --paper:#f4faf6;
+    --paper-2:#ffffff;
+    --ink:#12231a;
+    --ink-soft:#3f5c4c;
+    --danger:#b3492f;
+    --danger-soft:#f4e2dd;
+    --radius:14px;
+    --shadow:0 10px 30px rgba(15,46,33,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 480px at 85% -10%, var(--mint-100) 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, var(--mint-100) 0%, transparent 55%),
+      var(--paper);
+    font-family:'Noto Sans Sinhala', sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-user-select:text;
+  }
+  h1,h2,h3,.brand{font-family:'Noto Serif Sinhala', serif;}
+
+  header.topbar{
+    background:linear-gradient(120deg, var(--forest-900), var(--forest-700) 65%, var(--forest-600));
+    color:var(--mint-100);
+    padding:22px 32px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  header.topbar::after{
+    content:"";
+    position:absolute; right:-60px; top:-60px;
+    width:220px; height:220px; border-radius:50%;
+    background:radial-gradient(circle, rgba(149,213,178,0.25), transparent 70%);
+    pointer-events:none;
+  }
+  .topbar-right{ position:relative; z-index:2; }
+  .brand{font-size:1.5rem; font-weight:700; color:#fff; letter-spacing:.2px;}
+  .brand small{display:block; font-family:'Noto Sans Sinhala',sans-serif; font-weight:400; font-size:.72rem; color:var(--mint-200); margin-top:2px;}
+  .topbar-right{display:flex; align-items:center; gap:14px; font-size:.92rem;}
+  .pill{background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); padding:6px 14px; border-radius:999px;}
+  button.logout{
+    background:transparent; border:1px solid var(--mint-300); color:var(--mint-200);
+    padding:8px 18px; border-radius:999px; cursor:pointer; font-family:inherit; font-size:.88rem;
+    transition:.2s;
+  }
+  button.logout:hover{background:var(--mint-300); color:var(--forest-900);}
+
+  main{max-width:980px; margin:0 auto; padding:36px 20px 80px;}
+
+  /* ---------- LOGIN ---------- */
+  #loginWrap{
+    max-width:420px; margin:8vh auto 0; background:var(--paper-2);
+    border-radius:20px; padding:40px 34px; box-shadow:var(--shadow);
+    border:1px solid var(--mint-200);
+  }
+  #loginWrap h2{margin:0 0 6px; color:var(--forest-800); font-size:1.55rem;}
+  #loginWrap p.sub{margin:0 0 26px; color:var(--ink-soft); font-size:.92rem;}
+  label{display:block; font-size:.85rem; color:var(--forest-700); font-weight:600; margin:0 0 6px;}
+  input[type=text], input[type=password], textarea, select{
+    width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid #cfe6d7;
+    background:var(--paper); font-family:inherit; font-size:.95rem; color:var(--ink);
+    margin-bottom:18px; transition:.15s;
+  }
+  input:focus, textarea:focus, select:focus{
+    outline:none; border-color:var(--forest-600); background:#fff;
+    box-shadow:0 0 0 3px rgba(45,106,79,0.15);
+  }
+  textarea{resize:vertical; min-height:80px;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--forest-700); color:#fff; border:none; padding:12px 22px;
+    border-radius:10px; font-family:inherit; font-size:.95rem; font-weight:600;
+    cursor:pointer; transition:.18s; width:100%;
+  }
+  .btn:hover{background:var(--forest-600); transform:translateY(-1px);}
+  .btn.secondary{background:var(--mint-200); color:var(--forest-800); width:auto; padding:10px 18px;}
+  .btn.secondary:hover{background:var(--mint-300);}
+  .btn.danger{background:var(--danger); width:auto; padding:9px 16px; font-size:.85rem;}
+  .btn.danger:hover{background:#96371f;}
+  .btn.ghost{background:transparent; color:var(--forest-700); border:1.5px solid var(--forest-600); width:auto; padding:9px 16px; font-size:.85rem;}
+  .btn.ghost:hover{background:var(--mint-100);}
+  #loginError{color:var(--danger); font-size:.85rem; margin:-10px 0 16px; min-height:1em;}
+
+  /* ---------- DASHBOARD ---------- */
+  #dashboard{display:none;}
+  .section-title{
+    display:flex; align-items:baseline; justify-content:space-between; margin:38px 0 16px;
+  }
+  .section-title h2{font-size:1.25rem; color:var(--forest-800); margin:0;}
+  .section-title span{font-size:.82rem; color:var(--ink-soft);}
+
+  .card{
+    background:var(--paper-2); border-radius:var(--radius); padding:26px 28px;
+    box-shadow:var(--shadow); border:1px solid var(--mint-200);
+  }
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:0 20px;}
+  @media (max-width:640px){.grid2{grid-template-columns:1fr;}}
+
+  .entry{
+    background:var(--paper-2); border:1px solid var(--mint-200); border-radius:12px;
+    padding:18px 20px; margin-bottom:14px; position:relative;
+    transition:.15s; border-left:5px solid var(--forest-600);
+  }
+  .entry.draft{border-left-color:#c99a2e;}
+  .entry:hover{box-shadow:0 6px 18px rgba(15,46,33,0.1);}
+  .entry-top{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .entry-word{font-size:1.15rem; font-weight:700; color:var(--forest-800); font-family:'Noto Serif Sinhala',serif;}
+  .status-tag{
+    font-size:.72rem; padding:3px 11px; border-radius:999px; font-weight:600;
+    background:var(--mint-200); color:var(--forest-800);
+  }
+  .status-tag.draft{background:#f7e9c6; color:#7a5c12;}
+  .entry-meta{font-size:.82rem; color:var(--ink-soft); margin-top:6px; line-height:1.6;}
+  .entry-meta b{color:var(--forest-700);}
+  .entry-actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .empty-state{
+    text-align:center; padding:50px 20px; color:var(--ink-soft); font-size:.95rem;
+    border:1.5px dashed var(--mint-300); border-radius:14px; background:var(--mint-100);
+  }
+
+  /* edit modal */
+  .overlay{
+    display:none; position:fixed; inset:0; background:rgba(15,46,33,0.55);
+    align-items:center; justify-content:center; z-index:200; padding:20px;
+    backdrop-filter:blur(2px);
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--paper-2); border-radius:18px; padding:30px 32px; max-width:520px; width:100%;
+    box-shadow:0 20px 60px rgba(15,46,33,0.3); max-height:88vh; overflow-y:auto;
+  }
+  .modal h3{margin:0 0 20px; color:var(--forest-800);}
+  .modal-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:6px;}
+  .checkbox-row{display:flex; align-items:center; gap:8px; margin:-6px 0 18px;}
+  .checkbox-row input{width:auto; margin:0;}
+  .checkbox-row label{margin:0; font-weight:500; color:var(--ink);}
+  .toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--forest-800); color:#fff; padding:12px 22px; border-radius:10px;
+    font-size:.9rem; box-shadow:var(--shadow); opacity:0; transition:.25s; z-index:300;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  footer{
+    text-align:center; padding:26px 20px; color:var(--forest-700); font-size:.85rem;
+    background:var(--mint-100); border-top:1px solid var(--mint-200);
+  }
+
+  /* ---------- TABS ---------- */
+  .tab-nav{
+    display:flex; gap:8px; max-width:980px; margin:22px auto 0; padding:0 20px;
+  }
+  .tab-btn{
+    background:var(--paper-2); border:1.5px solid var(--mint-200); color:var(--ink-soft);
+    padding:10px 22px; border-radius:999px 999px 0 0; font-family:inherit; font-size:.92rem;
+    font-weight:600; cursor:pointer; transition:.15s; border-bottom:none;
+    position:relative; top:1px;
+  }
+  .tab-btn.active{
+    background:var(--forest-700); color:#fff; border-color:var(--forest-700);
+  }
+  .tab-btn:not(.active):hover{background:var(--mint-100); color:var(--forest-800);}
+
+  /* ---------- ANALYTICS ---------- */
+  #analyticsView{display:none;}
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:8px;}
+  @media (max-width:640px){.stat-grid{grid-template-columns:1fr;}}
+  .stat-card{
+    background:var(--paper-2); border:1px solid var(--mint-200); border-radius:var(--radius);
+    padding:24px 26px; box-shadow:var(--shadow); text-align:center;
+  }
+  .stat-num{font-family:'Noto Serif Sinhala',serif; font-size:2.3rem; font-weight:700; color:var(--forest-700);}
+  .stat-label{font-size:.88rem; color:var(--ink-soft); margin-top:4px;}
+  .sub-heading{color:var(--forest-800); font-size:1.08rem; margin:30px 0 14px;}
+  .rank-list{
+    background:var(--paper-2); border:1px solid var(--mint-200); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .rank-row{
+    display:flex; align-items:center; gap:14px; padding:13px 20px;
+    border-bottom:1px solid var(--mint-100);
+  }
+  .rank-row:last-child{border-bottom:none;}
+  .rank-pos{
+    width:26px; height:26px; border-radius:50%; background:var(--mint-200); color:var(--forest-800);
+    font-size:.78rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .rank-name{flex:1; font-weight:600; color:var(--forest-800);}
+  .rank-count{
+    background:var(--forest-700); color:#fff; font-size:.78rem; font-weight:700;
+    padding:3px 12px; border-radius:999px;
+  }
+  .tag-cloud{display:flex; flex-wrap:wrap; gap:10px;}
+  .source-tag{
+    background:var(--paper-2); border:1px solid var(--mint-200); color:var(--forest-800);
+    padding:8px 16px; border-radius:999px; font-size:.86rem; box-shadow:var(--shadow);
+  }
+  .source-tag b{color:var(--forest-600); margin-left:6px;}
+
+  /* ---------- DUPLICATE WORD MODAL ---------- */
+  .dup-message{
+    background:var(--mint-100); border:1px solid var(--mint-200); border-radius:10px;
+    padding:14px 16px; font-size:.9rem; color:var(--forest-800); line-height:1.65; margin-bottom:18px;
+  }
+  .dup-existing{
+    background:var(--paper); border:1px solid var(--mint-200); border-left:4px solid #c99a2e;
+    border-radius:10px; padding:14px 16px; margin-bottom:22px;
+  }
+  .dup-existing .dup-word{
+    font-family:'Noto Serif Sinhala',serif; font-weight:700; font-size:1.08rem;
+    color:var(--forest-800); margin-bottom:6px;
+  }
+  .dup-existing .dup-meaning{font-size:.88rem; color:var(--ink-soft); line-height:1.65;}
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+<header class="topbar">
+  <div class="brand">විෂයානුබද්ධ වාග් මාලාව-Subject-related vocabulary<small>පරිපාලක පුවරුව-Admin Panel — ඇතුළත් කිරීම් කළමනාකරණය-Data Entry Management</small></div>
+  <div class="topbar-right" id="topRightSlot"></div>
+</header>
+
+<div class="tab-nav">
+  <button class="tab-btn" id="tabAdminBtn">පරිපාලක පුවරුව-Admin Panel</button>
+  <button class="tab-btn" id="tabAnalyticsBtn">විශ්ලේෂණ-Analytics</button>
+</div>
+
+<main>
+
+  <div id="loginWrap">
+    <h2>ගිණුමට පිවිසෙන්න-Log in to the account</h2>
+    <p class="sub">ඔබගේ පරිශීලක නාමය සහ මුරපදය ඇතුළත් කරන්න-Enter your username and password.</p>
+    <label for="loginUser">පරිශීලක නාමය-Username</label>
+    <input type="text" id="loginUser" autocomplete="username">
+    <label for="loginPass">මුරපදය-Password</label>
+    <input type="password" id="loginPass" autocomplete="current-password">
+    <div id="loginError"></div>
+    <button class="btn" id="loginBtn">පිවිසෙන්න-Log in</button>
+  </div>
+
+  <div id="dashboard">
+
+    <div class="card">
+      <h2 style="margin-top:0; color:var(--forest-800); font-size:1.2rem;">නව වචනයක් ඇතුළත් කරන්න-Add a new word</h2>
+      <div class="grid2">
+        <div>
+          <label>වචනය-Word</label>
+          <input type="text" id="fWord" placeholder="උදා: සංශ්ලේෂණය-e.g: Synthesis">
+        </div>
+        <div>
+          <label>කැටගරිය-Category</label>
+          <select id="fCategory">
+            <option value="">තෝරන්න...-Select...</option>
+            <option value="History">History-ඉතිහාසය</option>
+            <option value="Religion">Religion-ආගම</option>
+            <option value="Science">Science-විද්‍යාව</option>
+            <option value="Technology">Technology-තාක්ෂණය</option>
+            <option value="Language">Language-භාෂාව</option>
+            <option value="National">National-ජාතික</option>
+            <option value="International">International-ජාත්‍යන්තර</option>
+            <option value="Other">Other-වෙනත්</option>
+          </select>
+          <input type="text" id="fCategoryOther" placeholder="කැටගරිය ලියන්න-Write the category" style="display:none;">
+        </div>
+      </div>
+      <label>අර්ථ විස්තරය-Meaning</label>
+      <textarea id="fMeaning" placeholder="වචනයේ සම්පූර්ණ අර්ථ විස්තරය මෙහි ලියන්න-Write the full meaning of the word here"></textarea>
+      <label>මූලාශ්‍රය-Source</label>
+      <select id="fSource">
+        <option value="">තෝරන්න...-Select...</option>
+        <option value="6 පෙළ පොත">6 පෙළ පොත/Grade 6 Text book</option>
+        <option value="7 පොළ පොත">7 පෙළ පොත/Grade 7 Text book</option>
+        <option value="8 පෙළ පොත">8 පෙළ පොත/Grade 8 Text book</option>
+        <option value="9 පෙළ පොත">9 පෙළ පොත/Grade 9 Text book</option>
+        <option value="10 පොළ පොත">10 පෙළ පොත/Grade 10 Text book</option>
+        <option value="11 පෙළ පොත">11 පෙළ පොත/Grade 11 Text book</option>
+        <option value="බාහිර මූලාශ්‍රයකි">බාහිර මූලාශ්‍රයකි/Other Source</option>
+      </select>
+      <input type="text" id="fSourceOther" placeholder="මූලාශ්‍රය ලියන්න (උදා: පොත/වෙබ් අඩවිය, පිටුව 45)-Write the source (e.g: book/website, page 45)" style="display:none;">
+      <div class="checkbox-row">
+        <input type="checkbox" id="fDraft">
+        <label for="fDraft">Draft ලෙස සුරකින්න (පොදුවේ නොපෙන්වන්න)-Save as Draft (not publicly visible)</label>
+      </div>
+      <button class="btn" id="addBtn" style="width:auto; padding:12px 28px;">එකතු කරන්න-Add</button>
+    </div>
+
+    <div class="section-title">
+      <h2>මා ඇතුළත් කළ දත්ත-My submitted entries</h2>
+      <span id="countLabel"></span>
+    </div>
+    <div id="entriesList"></div>
+
+  </div>
+
+  <div id="analyticsView">
+    <div class="section-title" style="margin-top:0;">
+      <h2>විශ්ලේෂණ-Analytics</h2>
+      <span>Password අවශ්‍ය නොවේ — විවෘතව බලාගත හැක-Password not required — can be viewed openly</span>
+    </div>
+    <div id="analyticsContent"><div class="empty-state">පූරණය වෙමින්...-Loading...</div></div>
+  </div>
+</main>
+
+<footer>කලාපීය ගුරු සහයෝගීතාව-Regional Teacher Collaboration</footer>
+
+<!-- Edit Modal -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <h3>ඇතුළත් කිරීම සංස්කරණය කරන්න-Edit entry</h3>
+    <input type="hidden" id="editId">
+    <label>වචනය-Word</label>
+    <input type="text" id="editWord">
+    <label>කැටගරිය-Category</label>
+    <select id="editCategory">
+      <option value="">තෝරන්න...-Select...</option>
+      <option value="History">History-ඉතිහාසය</option>
+      <option value="Religion">Religion-ආගම</option>
+      <option value="Science">Science-විද්‍යාව</option>
+      <option value="Technology">Technology-තාක්ෂණය</option>
+      <option value="Language">Language-භාෂාව</option>
+      <option value="National">National-ජාතික</option>
+      <option value="International">International-ජාත්‍යන්තර</option>
+      <option value="Other">Other-වෙනත්</option>
+    </select>
+    <input type="text" id="editCategoryOther" placeholder="කැටගරිය ලියන්න-Write the category" style="display:none;">
+    <label>අර්ථ විස්තරය-Meaning</label>
+    <textarea id="editMeaning"></textarea>
+    <label>මූලාශ්‍රය-Source</label>
+    <select id="editSource">
+      <option value="">තෝරන්න...-Select...</option>
+      <option value="6 පෙළ පොත">6 පෙළ පොත/Grade 6 Text book</option>
+      <option value="7 පොළ පොත">7 පෙළ පොත/Grade 7 Text book</option>
+      <option value="8 පෙළ පොත">8 පෙළ පොත/Grade 8 Text book</option>
+      <option value="8 පොළ පොත">8 පොළ පොත/Grade 8 Text book</option>
+      <option value="9 පෙළ පොත">9 පෙළ පොත/Grade 9 Text book</option>
+      <option value="10 පෙළ පොත">10 පෙළ පොත/Grade 10 Text book</option>
+      <option value="11 පෙළ පොත">11 පෙළ පොත/Grade 11 Text book</option>
+      <option value="බාහිර මූලාශ්‍රයකි">බාහිර මූලාශ්‍රයකි/Other Source</option>
+    </select>
+    <input type="text" id="editSourceOther" placeholder="මූලාශ්‍රය ලියන්න-Write the source" style="display:none;">
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelEdit">අවලංගු කරන්න-Cancel</button>
+      <button class="btn secondary" id="saveEdit" style="width:auto;">සුරකින්න-Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Duplicate Word Warning Modal -->
+<div class="overlay" id="duplicateOverlay">
+  <div class="modal">
+    <h3>වචනය දැනටමත් තිබේ-Word already exists</h3>
+    <div class="dup-message">
+      මේ වචනය දැනටමත් ඇතුළත් කර තිබේ. එය වැරදි නම් හෝ එහි අඩුවවක් ඇත්නම් පමණක් අලුතෙන් ඇතුළත් කරන්න. නමුත් පැරණි ඇතුළත් කිරීම මකා දැමීමට හෝ වෙනස් කළ හැක්කේ Authorට පමණි.<br><br>
+      This word has already been entered. Only add it again if it is incorrect or incomplete. However, only the original Author can delete or modify the existing entry.
+    </div>
+    <div class="dup-existing">
+      <div class="dup-word" id="dupWord"></div>
+      <div class="dup-meaning" id="dupMeaning"></div>
+    </div>
+    <div class="modal-actions" id="dupActionsInfo" style="display:none;">
+      <button class="btn secondary" id="dupOkBtn" style="width:auto;">තේරුණා-Understood</button>
+    </div>
+    <div class="modal-actions" id="dupActionsConfirm" style="display:none;">
+      <button class="btn ghost" id="dupCancelBtn">අවලංගු කරන්න-Cancel</button>
+      <button class="btn secondary" id="dupProceedBtn" style="width:auto;">එසේම එකතු කරන්න-Add anyway</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------------- CONFIG ----------------
+// Main project: authors, login, and the word_aliases table (read + write)
+const SUPABASE_URL = "https://uqgzlaxsnknheoerbfus.supabase.co";
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxZ3psYXhzbmtuaGVvZXJiZnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5MjM2MTUsImV4cCI6MjA3OTI4MzYxNX0.IYWZ7ukx8J-GJMWy7cMk2BWnmzJmJjjE93yEmJie7nQ";
+const REST = `${SUPABASE_URL}/rest/v1`;
+const HEADERS = {
+  apikey: ANON_KEY,
+  Authorization: `Bearer ${ANON_KEY}`,
+  "Content-Type": "application/json"
+};
+
+// Second project: the separate "words" table (read-only here, used only for analytics counts).
+// It lives in a different Supabase project, so it has its own URL and anon key.
+const WORDS_SOURCE = {
+  rest: "https://jcijglwpkfluyzrltimk.supabase.co/rest/v1",
+  key:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjaWpnbHdwa2ZsdXl6cmx0aW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MzU3OTUsImV4cCI6MjA4MjQxMTc5NX0.dvT8OiyVEiYn_DhkMakmSq1Vvr4REDr0kYPnyqCtWHs",
+  table: "words"
+};
+const WORDS_HEADERS = {
+  apikey: WORDS_SOURCE.key,
+  Authorization: `Bearer ${WORDS_SOURCE.key}`
+};
+
+// disable right click fully
+document.addEventListener("contextmenu", e => e.preventDefault());
+document.addEventListener("keydown", e => {
+  if (e.key === "F12") e.preventDefault();
+});
+
+let session = null;
+try { session = JSON.parse(sessionStorage.getItem("wa_admin_session") || "null"); } catch(e){}
+
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+function renderTopRight(){
+  const slot = document.getElementById("topRightSlot");
+  if (session){
+    slot.innerHTML = `<span class="pill">${escapeHtml(session.username)}</span><button class="logout" id="logoutBtn">ඉවත් වන්න-Log out</button>`;
+    document.getElementById("logoutBtn").onclick = logout;
+  } else {
+    slot.innerHTML = "";
+  }
+}
+
+function escapeHtml(str){
+  return String(str ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
+}
+
+function logout(){
+  sessionStorage.removeItem("wa_admin_session");
+  session = null;
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("loginWrap").style.display = "block";
+  renderTopRight();
+}
+
+async function login(){
+  const username = document.getElementById("loginUser").value.trim();
+  const password = document.getElementById("loginPass").value;
+  const errEl = document.getElementById("loginError");
+  errEl.textContent = "";
+  if (!username || !password){
+    errEl.textContent = "පරිශීලක නාමය සහ මුරපදය ඇතුළත් කරන්න.-Please enter username and password.";
+    return;
+  }
+  try {
+    const res = await fetch(`${REST}/rpc/authenticate_author`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ p_username: username, p_password: password })
+    });
+    if (!res.ok) throw new Error("network");
+    const rows = await res.json();
+    if (!rows || rows.length === 0){
+      errEl.textContent = "වැරදි පරිශීලක නාමයක් හෝ මුරපදයක්.-Incorrect username or password.";
+      return;
+    }
+    session = { id: rows[0].id, username: rows[0].username };
+    sessionStorage.setItem("wa_admin_session", JSON.stringify(session));
+    document.getElementById("loginWrap").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    renderTopRight();
+    loadEntries();
+  } catch(e){
+    errEl.textContent = "සම්බන්ධතාවයේ දෝෂයක්. නැවත උත්සාහ කරන්න.-Connection error. Please try again.";
+  }
+}
+
+async function loadEntries(){
+  const list = document.getElementById("entriesList");
+  list.innerHTML = `<div class="empty-state">පූරණය වෙමින්...-Loading...</div>`;
+  try {
+    const res = await fetch(`${REST}/word_aliases?author_id=eq.${session.id}&select=*&order=created_at.desc`, { headers: HEADERS });
+    const rows = await res.json();
+    document.getElementById("countLabel").textContent = `සම්පූර්ණ-Total: ${rows.length}`;
+    if (rows.length === 0){
+      list.innerHTML = `<div class="empty-state">ඔබ තවම කිසිදු වචනයක් ඇතුළත් කර නොමැත.-You have not entered any words yet.</div>`;
+      return;
+    }
+    list.innerHTML = rows.map(entryTemplate).join("");
+    rows.forEach(r => {
+      document.getElementById(`edit-${r.id}`).onclick = () => openEdit(r);
+      document.getElementById(`del-${r.id}`).onclick = () => deleteEntry(r.id);
+      document.getElementById(`draft-${r.id}`).onclick = () => toggleDraft(r);
+    });
+  } catch(e){
+    list.innerHTML = `<div class="empty-state">දත්ත පූරණය කිරීමේදී දෝෂයක් ඇති විය.-An error occurred while loading data.</div>`;
+  }
+}
+
+function entryTemplate(r){
+  const isDraft = r.status === "draft";
+  const date = r.created_at ? new Date(r.created_at).toLocaleDateString("si-LK") : "";
+  return `
+  <div class="entry ${isDraft ? "draft" : ""}">
+    <div class="entry-top">
+      <div class="entry-word">${escapeHtml(r.word)}</div>
+      <span class="status-tag ${isDraft ? "draft" : ""}">${isDraft ? "කටුපත-Draft" : "පළ කළ-Published"}</span>
+    </div>
+    <div class="entry-meta">
+      <div><b>අර්ථ විස්තරය-Meaning:</b> ${escapeHtml(r.meaning || "-")}</div>
+      <div><b>කැටගරිය-Category:</b> ${escapeHtml(r.category || "-")} &nbsp; | &nbsp; <b>මූලාශ්‍රය-Source:</b> ${escapeHtml(r.source || "-")} &nbsp; | &nbsp; ${date}</div>
+    </div>
+    <div class="entry-actions">
+      <button class="btn ghost" id="edit-${r.id}">සංස්කරණය-Edit</button>
+      <button class="btn secondary" id="draft-${r.id}">${isDraft ? "Publish කරන්න-Publish" : "Draft කරන්න-Save as Draft"}</button>
+      <button class="btn danger" id="del-${r.id}">මකන්න-Delete</button>
+    </div>
+  </div>`;
+}
+
+let pendingEntryPayload = null;
+
+// looks up an existing entry (any author) with the same word, case-insensitive exact match
+async function checkDuplicateWord(word){
+  try {
+    const res = await fetch(`${REST}/word_aliases?word=ilike.${encodeURIComponent(word)}&select=word,meaning&limit=1`, { headers: HEADERS });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows.length > 0 ? rows[0] : null;
+  } catch(e){
+    return null;
+  }
+}
+
+// mode: "info" shows a single acknowledgement button (used while still filling the form),
+// mode: "confirm" shows Cancel / Add-anyway (used right before actually inserting)
+function showDuplicateModal(match, mode){
+  document.getElementById("dupWord").textContent = match.word;
+  document.getElementById("dupMeaning").textContent = match.meaning || "-";
+  document.getElementById("dupActionsInfo").style.display = mode === "info" ? "flex" : "none";
+  document.getElementById("dupActionsConfirm").style.display = mode === "confirm" ? "flex" : "none";
+  document.getElementById("duplicateOverlay").classList.add("show");
+}
+
+// fires as soon as the user leaves the word field (moves to category, meaning, or anywhere else)
+document.getElementById("fWord").addEventListener("blur", async (e) => {
+  const word = e.target.value.trim();
+  if (!word) return;
+  // if they're moving straight to the "එකතු කරන්න" button, let the submit-time check below handle it instead of double-popping
+  if (e.relatedTarget && e.relatedTarget.id === "addBtn") return;
+  const match = await checkDuplicateWord(word);
+  if (match) showDuplicateModal(match, "info");
+});
+
+// ---------------- CATEGORY / SOURCE DROPDOWNS ----------------
+const CATEGORY_OTHER_VALUE = "Other";
+const SOURCE_OTHER_VALUE = "බාහිර මූලාශ්‍රයකි";
+const KNOWN_CATEGORIES = ["History","Religion","Science","Technology","Language","National","International"];
+const KNOWN_SOURCES = ["6 පෙළ පොත","7 පොළ පොත","8 පෙළ පොත","8 පොළ පොත","9 පෙළ පොත","10 පොළ පොත","11 පෙළ පොත"];
+
+function toggleOtherInputVisibility(selectId, otherInputId, triggerValue){
+  const sel = document.getElementById(selectId);
+  const otherInput = document.getElementById(otherInputId);
+  const show = sel.value === triggerValue;
+  otherInput.style.display = show ? "block" : "none";
+  if (!show) otherInput.value = "";
+}
+
+function resolveDropdownValue(selectId, otherInputId, triggerValue){
+  const sel = document.getElementById(selectId);
+  if (sel.value === triggerValue){
+    return document.getElementById(otherInputId).value.trim();
+  }
+  return sel.value;
+}
+
+function populateDropdownForEdit(selectId, otherInputId, triggerValue, currentValue, knownValues){
+  const sel = document.getElementById(selectId);
+  const otherInput = document.getElementById(otherInputId);
+  if (currentValue && knownValues.includes(currentValue)){
+    sel.value = currentValue;
+    otherInput.style.display = "none";
+    otherInput.value = "";
+  } else if (currentValue){
+    sel.value = triggerValue;
+    otherInput.style.display = "block";
+    otherInput.value = currentValue;
+  } else {
+    sel.value = "";
+    otherInput.style.display = "none";
+    otherInput.value = "";
+  }
+}
+
+document.getElementById("fCategory").addEventListener("change", () => toggleOtherInputVisibility("fCategory","fCategoryOther", CATEGORY_OTHER_VALUE));
+document.getElementById("fSource").addEventListener("change", () => toggleOtherInputVisibility("fSource","fSourceOther", SOURCE_OTHER_VALUE));
+document.getElementById("editCategory").addEventListener("change", () => toggleOtherInputVisibility("editCategory","editCategoryOther", CATEGORY_OTHER_VALUE));
+document.getElementById("editSource").addEventListener("change", () => toggleOtherInputVisibility("editSource","editSourceOther", SOURCE_OTHER_VALUE));
+
+async function addEntry(){
+  const word = document.getElementById("fWord").value.trim();
+  const meaning = document.getElementById("fMeaning").value.trim();
+  const category = resolveDropdownValue("fCategory","fCategoryOther", CATEGORY_OTHER_VALUE);
+  const source = resolveDropdownValue("fSource","fSourceOther", SOURCE_OTHER_VALUE);
+  const isDraft = document.getElementById("fDraft").checked;
+
+  if (!word || !meaning){
+    showToast("වචනය සහ අර්ථ විස්තරය අවශ්‍යයි.-Word and meaning are required.");
+    return;
+  }
+
+  const payload = {
+    word, meaning, category, source,
+    author: session.username,
+    author_id: session.id,
+    status: isDraft ? "draft" : "published"
+  };
+
+  const match = await checkDuplicateWord(word);
+  if (match){
+    pendingEntryPayload = payload;
+    showDuplicateModal(match, "confirm");
+    return;
+  }
+
+  await submitEntry(payload);
+}
+
+async function submitEntry(payload){
+  try {
+    const res = await fetch(`${REST}/word_aliases`, {
+      method: "POST",
+      headers: { ...HEADERS, Prefer: "return=representation" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error("insert failed");
+    ["fWord","fMeaning"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("fCategory").value = "";
+    document.getElementById("fSource").value = "";
+    document.getElementById("fCategoryOther").value = "";
+    document.getElementById("fCategoryOther").style.display = "none";
+    document.getElementById("fSourceOther").value = "";
+    document.getElementById("fSourceOther").style.display = "none";
+    document.getElementById("fDraft").checked = false;
+    showToast("සාර්ථකව එකතු කරන ලදී.-Successfully added.");
+    loadEntries();
+  } catch(e){
+    showToast("එකතු කිරීමේදී දෝෂයක් ඇති විය.-An error occurred while adding.");
+  }
+}
+
+
+function openEdit(r){
+  document.getElementById("editId").value = r.id;
+  document.getElementById("editWord").value = r.word || "";
+  populateDropdownForEdit("editCategory","editCategoryOther", CATEGORY_OTHER_VALUE, r.category || "", KNOWN_CATEGORIES);
+  document.getElementById("editMeaning").value = r.meaning || "";
+  populateDropdownForEdit("editSource","editSourceOther", SOURCE_OTHER_VALUE, r.source || "", KNOWN_SOURCES);
+  document.getElementById("editOverlay").classList.add("show");
+}
+
+async function saveEdit(){
+  const id = document.getElementById("editId").value;
+  const payload = {
+    word: document.getElementById("editWord").value.trim(),
+    category: resolveDropdownValue("editCategory","editCategoryOther", CATEGORY_OTHER_VALUE),
+    meaning: document.getElementById("editMeaning").value.trim(),
+    source: resolveDropdownValue("editSource","editSourceOther", SOURCE_OTHER_VALUE),
+    updated_at: new Date().toISOString()
+  };
+  try {
+    const res = await fetch(`${REST}/word_aliases?id=eq.${id}&author_id=eq.${session.id}`, {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error("update failed");
+    document.getElementById("editOverlay").classList.remove("show");
+    showToast("සංස්කරණය සුරැකිණි.-Edit saved.");
+    loadEntries();
+  } catch(e){
+    showToast("සංස්කරණය අසාර්ථක විය.-Edit failed.");
+  }
+}
+
+async function deleteEntry(id){
+  if (!confirm("මෙම ඇතුළත් කිරීම මකා දැමීමට අවශ්‍ය බව ඔබට විශ්වාසද?-Are you sure you want to delete this entry?")) return;
+  try {
+    const res = await fetch(`${REST}/word_aliases?id=eq.${id}&author_id=eq.${session.id}`, {
+      method: "DELETE",
+      headers: HEADERS
+    });
+    if (!res.ok) throw new Error("delete failed");
+    showToast("මකා දමන ලදී.-Deleted.");
+    loadEntries();
+  } catch(e){
+    showToast("මකා දැමීම අසාර්ථක විය.-Deletion failed.");
+  }
+}
+
+async function toggleDraft(r){
+  const newStatus = r.status === "draft" ? "published" : "draft";
+  try {
+    const res = await fetch(`${REST}/word_aliases?id=eq.${r.id}&author_id=eq.${session.id}`, {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ status: newStatus, updated_at: new Date().toISOString() })
+    });
+    if (!res.ok) throw new Error("toggle failed");
+    showToast(newStatus === "draft" ? "Draft තත්ත්වයට මාරු කරන ලදී.-Changed to Draft status." : "Publish කරන ලදී.-Published.");
+    loadEntries();
+  } catch(e){
+    showToast("තත්ත්වය වෙනස් කිරීම අසාර්ථක විය.-Status change failed.");
+  }
+}
+
+document.getElementById("loginBtn").addEventListener("click", login);
+document.getElementById("loginPass").addEventListener("keydown", e => { if (e.key === "Enter") login(); });
+document.getElementById("addBtn").addEventListener("click", addEntry);
+document.getElementById("cancelEdit").addEventListener("click", () => document.getElementById("editOverlay").classList.remove("show"));
+document.getElementById("saveEdit").addEventListener("click", saveEdit);
+document.getElementById("dupOkBtn").addEventListener("click", () => {
+  document.getElementById("duplicateOverlay").classList.remove("show");
+});
+document.getElementById("dupCancelBtn").addEventListener("click", () => {
+  pendingEntryPayload = null;
+  document.getElementById("duplicateOverlay").classList.remove("show");
+});
+document.getElementById("dupProceedBtn").addEventListener("click", async () => {
+  document.getElementById("duplicateOverlay").classList.remove("show");
+  if (pendingEntryPayload){
+    await submitEntry(pendingEntryPayload);
+    pendingEntryPayload = null;
+  }
+});
+
+// ---------------- TABS ----------------
+function setActiveTabBtn(tab){
+  document.getElementById("tabAdminBtn").classList.toggle("active", tab === "admin");
+  document.getElementById("tabAnalyticsBtn").classList.toggle("active", tab === "analytics");
+}
+
+function showAdminTab(){
+  setActiveTabBtn("admin");
+  document.getElementById("analyticsView").style.display = "none";
+  if (session){
+    document.getElementById("loginWrap").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+  } else {
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("loginWrap").style.display = "block";
+  }
+}
+
+function showAnalyticsTab(){
+  setActiveTabBtn("analytics");
+  document.getElementById("loginWrap").style.display = "none";
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("analyticsView").style.display = "block";
+  loadAnalytics();
+}
+
+document.getElementById("tabAdminBtn").addEventListener("click", showAdminTab);
+document.getElementById("tabAnalyticsBtn").addEventListener("click", showAnalyticsTab);
+
+// ---------------- ANALYTICS (no login required) ----------------
+
+// exact row count of the "words" table (other project) without downloading every row.
+// Uses a HEAD request with "Prefer: count=exact"; PostgREST answers with a header like "Content-Range: */1234".
+async function countWordsTable(){
+  const res = await fetch(`${WORDS_SOURCE.rest}/${WORDS_SOURCE.table}?select=id`, {
+    method: "HEAD",
+    headers: { ...WORDS_HEADERS, Prefer: "count=exact" }
+  });
+  if (!res.ok) throw new Error("words count failed: " + res.status);
+  const range = res.headers.get("content-range");
+  const total = range ? parseInt(range.split("/")[1], 10) : NaN;
+  if (Number.isNaN(total)) throw new Error("words count missing");
+  return total;
+}
+
+async function loadAnalytics(){
+  const wrap = document.getElementById("analyticsContent");
+  wrap.innerHTML = `<div class="empty-state">පූරණය වෙමින්...-Loading...</div>`;
+  try {
+    // word_aliases: has author + source, drives the author ranking & source list
+    const waRes = await fetch(`${REST}/word_aliases?select=author,source`, { headers: HEADERS });
+    if (!waRes.ok) throw new Error("fetch failed");
+    const waRows = await waRes.json();
+
+    // words: separate dataset in another project, no author/source columns — only contributes to the total word count
+    let wordsCount = 0;
+    let wordsError = false;
+    try {
+      wordsCount = await countWordsTable();
+    } catch (e) {
+      console.warn("[words] analytics count failed:", e);
+      wordsError = true;
+    }
+
+    const authorCounts = {};
+    const sourceCounts = {};
+    waRows.forEach(r => {
+      const a = (r.author && r.author.trim()) ? r.author.trim() : "නොදන්නා-Unknown";
+      authorCounts[a] = (authorCounts[a] || 0) + 1;
+      const s = (r.source && r.source.trim()) ? r.source.trim() : null;
+      if (s) sourceCounts[s] = (sourceCounts[s] || 0) + 1;
+    });
+
+    const authorList = Object.entries(authorCounts).sort((a, b) => b[1] - a[1]);
+    const sourceList = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]);
+    const totalAuthors = authorList.length;
+    const totalWords = waRows.length + wordsCount;
+
+    const datasetRows = [
+      ["විෂයානුබද්ධ වාග් මාලාව-Subject-related Vocabulary (word_aliases)", waRows.length],
+      ["අමතර දත්ත මූලාශ්‍රය-Additional data source (words)", wordsError ? "-" : wordsCount]
+    ];
+
+    wrap.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-num">${totalWords}</div>
+          <div class="stat-label">දැනට ඇති සම්පූර්ණ වචන ගණන (සියලු මූලාශ්‍ර)-Total words currently available (all sources)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">${totalAuthors}</div>
+          <div class="stat-label">දැනට සිටින Author ගණන (word_aliases)-Current number of Authors (word_aliases)</div>
+        </div>
+      </div>
+
+      <h3 class="sub-heading">දත්ත මූලාශ්‍ර අනුව වචන ගණන-Word count by data source</h3>
+      <div class="rank-list">
+        ${datasetRows.map(([name, count]) => `
+          <div class="rank-row">
+            <span class="rank-name">${escapeHtml(name)}</span>
+            <span class="rank-count">${count}</span>
+          </div>`).join("")}
+      </div>
+      ${wordsError ? `<div class="empty-state" style="margin-top:10px;">words table එකට connect වෙන්න බැරි වුණා — table නම, anon key එක හෝ RLS (SELECT policy) නැවත පරීක්ෂා කරන්න.-Could not connect to the words table — please check the table name, the anon key, or the RLS (SELECT policy).</div>` : ""}
+
+      <h3 class="sub-heading">Author අනුව වචන ගණන (word_aliases, අවරෝහණ පිළිවෙළ)-Word count by Author (word_aliases, descending order)</h3>
+      ${
+        authorList.length
+          ? `<div class="rank-list">${authorList.map(([name, count], i) => `
+              <div class="rank-row">
+                <span class="rank-pos">${i + 1}</span>
+                <span class="rank-name">${escapeHtml(name)}</span>
+                <span class="rank-count">${count}</span>
+              </div>`).join("")}</div>`
+          : `<div class="empty-state">දත්ත නොමැත.-No data.</div>`
+      }
+      <div class="empty-state" style="margin-top:10px; padding:14px; text-align:left;">words table එකේ author තොරතුරු නොමැති නිසා, එහි වචන මෙම ranking එකට ඇතුළත් නොවේ — ඒවා ඉහත මුළු ගණනට පමණක් එකතු වේ.-Since the words table has no author information, its words are not included in this ranking — they are only added to the total count above.</div>
+
+      <h3 class="sub-heading">භාවිත කර ඇති මූලාශ්‍ර (word_aliases)-Sources used (word_aliases)</h3>
+      ${
+        sourceList.length
+          ? `<div class="tag-cloud">${sourceList.map(([s, count]) => `
+              <span class="source-tag">${escapeHtml(s)}<b>${count}</b></span>`).join("")}</div>`
+          : `<div class="empty-state">මූලාශ්‍ර සටහන් වී නොමැත.-No sources recorded.</div>`
+      }
+    `;
+  } catch (e) {
+    wrap.innerHTML = `<div class="empty-state">දත්ත පූරණය කිරීමේදී දෝෂයක් ඇති විය.-An error occurred while loading data.</div>`;
+  }
+}
+
+// init
+renderTopRight();
+showAdminTab();
+</script>
+</body>
+</html>
