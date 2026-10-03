@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Password Generator - Supabase Admin</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+}
+
+h1 {
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+}
+
+.subtitle {
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}
+
+.alert {
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  color: #856404;
+  margin-bottom: 1.5rem;
+}
+
+.connection-status {
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.status-connected {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-disconnected {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-connected .status-indicator {
+  background: #28a745;
+}
+
+.status-disconnected .status-indicator {
+  background: #dc3545;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.section h2 {
+  color: #667eea;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.expiry-selector {
+  background: #e8f5e9;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.expiry-selector h3 {
+  color: #2e7d32;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.expiry-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.expiry-btn {
+  padding: 0.75rem;
+  background: white;
+  border: 2px solid #4caf50;
+  border-radius: 6px;
+  color: #2e7d32;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.expiry-btn:hover {
+  background: #4caf50;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.expiry-btn.active {
+  background: #4caf50;
+  color: white;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.custom-expiry {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.custom-expiry input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid #4caf50;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.custom-expiry label {
+  color: #2e7d32;
+  font-weight: 600;
+  margin: 0;
+}
+
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  align-items: end;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  margin-bottom: 0.25rem;
+  color: #555;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+input {
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.3s;
+}
+
+input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+button {
+  padding: 0.75rem 1.5rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+button:hover:not(:disabled) {
+  background: #5568d3;
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+button.add {
+  background: #4caf50;
+}
+
+button.add:hover {
+  background: #45a049;
+}
+
+button.clear {
+  background: #ff9800;
+}
+
+button.clear:hover {
+  background: #f57c00;
+}
+
+button.remove {
+  background: #f44336;
+  padding: 0.75rem;
+}
+
+button.remove:hover {
+  background: #da190b;
+}
+
+button.delete-btn {
+  background: #dc3545;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+button.delete-btn:hover {
+  background: #c82333;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem;
+  border-right: 1px solid #e0e0e0;
+}
+
+.stat-item:last-child {
+  border-right: none;
+}
+
+.stat-number {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.credentials-list {
+  margin-top: 1rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.credential-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s;
+}
+
+.credential-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.credential-info {
+  flex: 1;
+}
+
+.credential-info strong {
+  color: #667eea;
+  font-size: 0.95rem;
+}
+
+.credential-info span {
+  color: #666;
+  font-size: 0.85rem;
+  margin-left: 1rem;
+  display: inline-block;
+}
+
+.credential-info .date {
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.empty-state {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.message-box {
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  display: none;
+}
+
+.message-box.show {
+  display: block;
+  animation: slideIn 0.3s;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-box.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message-box.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.message-box.info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.copy-message {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #81c784;
+}
+
+.refresh-btn {
+  background: #17a2b8;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+}
+
+.refresh-btn:hover {
+  background: #138496;
+}
+
+.test-btn {
+  background: #6c757d;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+}
+
+.test-btn:hover {
+  background: #5a6268;
+}
+
+.setup-guide {
+  background: #e7f3ff;
+  border: 1px solid #2196F3;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.setup-guide h3 {
+  color: #1976D2;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.setup-guide ol {
+  margin-left: 1.5rem;
+  line-height: 1.8;
+  color: #555;
+}
+
+.setup-guide code {
+  background: #fff;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #d32f2f;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔧 Password Generator - Supabase</h1>
+  <p class="subtitle">Admin tool for managing LearnX access credentials</p>
+  
+  <div class="alert">
+    <strong>⚠️ Security Notice:</strong> This is an admin-only tool. Keep your Supabase credentials secure.
+  </div>
+  
+  <div class="connection-status status-disconnected" id="connectionStatus">
+    <div class="status-indicator"></div>
+    <span id="statusText">Not connected - Configure Supabase first</span>
+  </div>
+  
+  <!-- Setup Guide -->
+  <div class="setup-guide" id="setupGuide">
+    <h3>📚 Quick Setup Guide:</h3>
+    <ol>
+      <li>Go to <strong>Supabase Dashboard → SQL Editor</strong></li>
+      <li>Run this SQL command to create the table:</li>
+    </ol>
+    <div style="background: #fff; padding: 0.75rem; border-radius: 4px; margin: 0.5rem 0; font-family: monospace; font-size: 0.85rem; overflow-x: auto;">
+CREATE TABLE IF NOT EXISTS public.credentials (<br>
+&nbsp;&nbsp;id BIGSERIAL PRIMARY KEY,<br>
+&nbsp;&nbsp;access_code TEXT UNIQUE NOT NULL,<br>
+&nbsp;&nbsp;password_hash TEXT NOT NULL,<br>
+&nbsp;&nbsp;created_at TIMESTAMPTZ DEFAULT NOW(),<br>
+&nbsp;&nbsp;expiry_days INTEGER DEFAULT 365,<br>
+&nbsp;&nbsp;last_login TIMESTAMPTZ,<br>
+&nbsp;&nbsp;is_active BOOLEAN DEFAULT TRUE<br>
+);<br><br>
+ALTER TABLE public.credentials ENABLE ROW LEVEL SECURITY;<br><br>
+CREATE POLICY "Allow all" ON public.credentials FOR ALL TO anon USING (true) WITH CHECK (true);<br><br>
+GRANT ALL ON public.credentials TO anon;<br>
+GRANT USAGE, SELECT ON SEQUENCE credentials_id_seq TO anon;
+    </div>
+    <ol start="3">
+      <li>Get your <code>Project URL</code> and <code>anon key</code> from <strong>Settings → API</strong></li>
+      <li>Enter them below and click "Connect"</li>
+    </ol>
+  </div>
+  
+  <!-- Supabase Configuration -->
+  <div class="section">
+    <h2>⚙️ Supabase Configuration</h2>
+    <div class="input-row" style="grid-template-columns: 1fr;">
+      <div class="input-group">
+        <label>Supabase URL (From Settings → API)</label>
+        <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+      </div>
+    </div>
+    <div class="input-row" style="grid-template-columns: 1fr;">
+      <div class="input-group">
+        <label>Supabase Anon Key (From Settings → API)</label>
+        <input type="password" id="supabaseKey" placeholder="Your anon/public key">
+      </div>
+    </div>
+    <div class="button-group">
+      <button id="connectBtn">🔌 Connect to Supabase</button>
+      <button class="test-btn" id="testBtn" disabled>🧪 Test Connection</button>
+    </div>
+    <div class="message-box" id="configMessage"></div>
+  </div>
+  
+  <!-- Add New Users -->
+  <div class="section">
+    <h2>➕ Add New Users</h2>
+    
+    <!-- Expiry Duration Selector -->
+    <div class="expiry-selector">
+      <h3>⏱️ Password Expiry Duration (කාලසීමාව තෝරන්න)</h3>
+      <div class="expiry-options" id="expiryOptions">
+        <button class="expiry-btn" data-days="7">7 Days</button>
+        <button class="expiry-btn" data-days="30">30 Days</button>
+        <button class="expiry-btn" data-days="90">90 Days</button>
+        <button class="expiry-btn" data-days="180">180 Days</button>
+        <button class="expiry-btn active" data-days="365">365 Days</button>
+      </div>
+      <div class="custom-expiry">
+        <label>Custom Days:</label>
+        <input type="number" id="customDays" min="1" max="3650" value="365">
+        <span style="color: #2e7d32; font-weight: 600;">Selected: <span id="selectedDays">365</span> days</span>
+      </div>
+    </div>
+    
+    <div id="inputRows">
+      <div class="input-row">
+        <div class="input-group">
+          <label>Access Code</label>
+          <input type="text" class="access-code" placeholder="e.g., USER001">
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input type="text" class="password" placeholder="Enter password">
+        </div>
+        <button class="remove" style="display: none;">✕</button>
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button class="add" id="addBtn">+ Add Another</button>
+      <button class="clear" id="clearBtn">🗑️ Clear All</button>
+      <button id="saveBtn" disabled>💾 Save to Database</button>
+    </div>
+    
+    <div class="message-box" id="saveMessage"></div>
+    <div class="copy-message" id="copyMessage" style="display: none;"></div>
+  </div>
+  
+  <!-- Statistics -->
+  <div class="section">
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-number" id="statTotal">0</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="statActive">0</div>
+        <div class="stat-label">Active Today</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="statExpired">0</div>
+        <div class="stat-label">Expired</div>
+      </div>
+    </div>
+    
+    <div style="text-align: right;">
+      <button class="refresh-btn" id="refreshBtn" disabled>
+        🔄 Refresh List
+      </button>
+    </div>
+  </div>
+  
+  <!-- Current Credentials -->
+  <div class="section">
+    <h2>📋 Current Users in Database</h2>
+    <div id="credentialsList" class="credentials-list">
+      <div class="empty-state">Connect to Supabase to view credentials</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// Global variables
+let dbClient = null;
+let isConnected = false;
+let selectedExpiryDays = 365;
+
+function hash(str) {
+  return CryptoJS.SHA256(str).toString();
+}
+
+function setExpiry(days) {
+  selectedExpiryDays = days;
+  document.getElementById('customDays').value = days;
+  document.getElementById('selectedDays').textContent = days;
+  
+  document.querySelectorAll('.expiry-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (parseInt(btn.getAttribute('data-days')) === days) {
+      btn.classList.add('active');
+    }
+  });
+}
+
+function setCustomExpiry() {
+  const days = parseInt(document.getElementById('customDays').value);
+  if (days > 0 && days <= 3650) {
+    selectedExpiryDays = days;
+    document.getElementById('selectedDays').textContent = days;
+    
+    document.querySelectorAll('.expiry-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+  }
+}
+
+function showMessage(elementId, message, type) {
+  const el = document.getElementById(elementId);
+  el.innerHTML = message;
+  el.className = 'message-box show ' + type;
+  setTimeout(() => {
+    if (type !== 'error') {
+      el.classList.remove('show');
+    }
+  }, 5000);
+}
+
+function updateConnectionStatus(connected) {
+  isConnected = connected;
+  const statusEl = document.getElementById('connectionStatus');
+  const statusText = document.getElementById('statusText');
+  const setupGuide = document.getElementById('setupGuide');
+  
+  if (connected) {
+    statusEl.className = 'connection-status status-connected';
+    statusText.textContent = '✓ Connected to Supabase';
+    setupGuide.style.display = 'none';
+    document.getElementById('saveBtn').disabled = false;
+    document.getElementById('refreshBtn').disabled = false;
+    document.getElementById('testBtn').disabled = false;
+    loadCredentials();
+  } else {
+    statusEl.className = 'connection-status status-disconnected';
+    statusText.textContent = '✕ Not connected';
+    setupGuide.style.display = 'block';
+    document.getElementById('saveBtn').disabled = true;
+    document.getElementById('refreshBtn').disabled = true;
+    document.getElementById('testBtn').disabled = true;
+  }
+}
+
+async function testConnection() {
+  if (!dbClient) {
+    showMessage('configMessage', '⚠️ Please connect first', 'error');
+    return;
+  }
+  
+  showMessage('configMessage', '🔍 Testing connection...', 'info');
+  
+  try {
+    const { data: testData, error: testError } = await dbClient
+      .from('credentials')
+      .select('count', { count: 'exact', head: true });
+    
+    if (testError) {
+      if (testError.code === '42P01') {
+        showMessage('configMessage', 
+          '❌ <strong>Table not found!</strong><br>' +
+          'Please run the SQL command shown in the setup guide above to create the table.', 
+          'error');
+      } else {
+        showMessage('configMessage', 
+          '❌ <strong>Connection Error:</strong> ' + testError.message + '<br>' +
+          '<small>Check your URL and API key</small>', 
+          'error');
+      }
+      return;
+    }
+    
+    showMessage('configMessage', 
+      '✅ <strong>Connection successful!</strong><br>' +
+      'Table exists and is accessible. You can now add users.', 
+      'success');
+    
+  } catch (error) {
+    showMessage('configMessage', 
+      '❌ <strong>Unexpected error:</strong> ' + error.message, 
+      'error');
+  }
+}
+
+async function connectSupabase() {
+  const url = document.getElementById('supabaseUrl').value.trim();
+  const key = document.getElementById('supabaseKey').value.trim();
+  
+  if (!url || !key) {
+    showMessage('configMessage', '⚠️ Please enter both URL and Key', 'error');
+    return;
+  }
+  
+  if (!url.startsWith('https://') || !url.includes('.supabase.co')) {
+    showMessage('configMessage', '⚠️ Invalid URL format. Should be: https://xxxxx.supabase.co', 'error');
+    return;
+  }
+  
+  try {
+    showMessage('configMessage', '🔄 Connecting to Supabase...', 'info');
+    
+    dbClient = window.supabase.createClient(url, key);
+    
+    const { count, error } = await dbClient
+      .from('credentials')
+      .select('*', { count: 'exact', head: true });
+    
+    if (error) {
+      if (error.code === '42P01') {
+        showMessage('configMessage', 
+          '⚠️ <strong>Table not found!</strong><br>' +
+          'Run the SQL command in the setup guide above to create the <code>credentials</code> table.<br><br>' +
+          '<strong>Go to:</strong> Supabase Dashboard → SQL Editor → New Query → Run the SQL code', 
+          'error');
+        updateConnectionStatus(false);
+      } else {
+        throw error;
+      }
+      return;
+    }
+    
+    showMessage('configMessage', 
+      '✅ <strong>Successfully connected!</strong><br>' +
+      'Found ' + (count || 0) + ' existing user(s) in database.', 
+      'success');
+    updateConnectionStatus(true);
+    
+    localStorage.setItem('supabase_url', url);
+    localStorage.setItem('supabase_key', key);
+    
+  } catch (error) {
+    console.error('Connection error:', error);
+    showMessage('configMessage', 
+      '❌ <strong>Connection failed:</strong> ' + error.message + '<br>' +
+      '<small>Check your credentials and try again</small>', 
+      'error');
+    updateConnectionStatus(false);
+  }
+}
+
+function addRow() {
+  const container = document.getElementById('inputRows');
+  const newRow = document.createElement('div');
+  newRow.className = 'input-row';
+  newRow.innerHTML = `
+    <div class="input-group">
+      <label>Access Code</label>
+      <input type="text" class="access-code" placeholder="e.g., USER001">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="text" class="password" placeholder="Enter password">
+    </div>
+    <button class="remove">✕</button>
+  `;
+  
+  newRow.querySelector('.remove').addEventListener('click', function() {
+    removeRow(this);
+  });
+  
+  container.appendChild(newRow);
+}
+
+function removeRow(btn) {
+  const container = document.getElementById('inputRows');
+  if (container.children.length > 1) {
+    btn.parentElement.remove();
+  } else {
+    alert('You must have at least one row');
+  }
+}
+
+function clearAllRows() {
+  if (!confirm('Clear all input rows?')) return;
+  
+  const container = document.getElementById('inputRows');
+  container.innerHTML = `
+    <div class="input-row">
+      <div class="input-group">
+        <label>Access Code</label>
+        <input type="text" class="access-code" placeholder="e.g., USER001">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="text" class="password" placeholder="Enter password">
+      </div>
+      <button class="remove" style="display: none;">✕</button>
+    </div>
+  `;
+}
+
+async function saveToSupabase() {
+  if (!isConnected) {
+    showMessage('saveMessage', '⚠️ Please connect to Supabase first', 'error');
+    return;
+  }
+  
+  const rows = document.querySelectorAll('.input-row');
+  const newUsers = [];
+  let messageText = '';
+  
+  rows.forEach(row => {
+    const codeInput = row.querySelector('.access-code');
+    const passInput = row.querySelector('.password');
+    
+    if (!codeInput || !passInput) return;
+    
+    const code = codeInput.value.trim().toUpperCase();
+    const pass = passInput.value;
+    
+    if (code && pass) {
+      newUsers.push({
+        access_code: code,
+        password_hash: hash(pass),
+        created_at: new Date().toISOString(),
+        expiry_days: selectedExpiryDays,
+        is_active: true,
+        password_plain: pass
+      });
+      
+      messageText += `ඔබේ access code එක: ${code}\nPassword එක: ${pass}\nකාලසීමාව: ${selectedExpiryDays} days\n\n`;
+    }
+  });
+  
+  if (newUsers.length === 0) {
+    showMessage('saveMessage', '⚠️ Please enter at least one user', 'error');
+    return;
+  }
+  
+  try {
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '💾 Saving...';
+    
+    const usersToInsert = newUsers.map(({password_plain, ...user}) => user);
+    
+    const { data, error } = await dbClient
+      .from('credentials')
+      .insert(usersToInsert)
+      .select();
+    
+    if (error) {
+      if (error.code === '23505') {
+        showMessage('saveMessage', '⚠️ One or more access codes already exist in database', 'error');
+      } else {
+        throw error;
+      }
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 Save to Database';
+      return;
+    }
+    
+    showMessage('saveMessage', `✅ Successfully saved ${newUsers.length} user(s)! (Expiry: ${selectedExpiryDays} days)`, 'success');
+    
+    messageText += 'මෙය ඔබට ලැබී මිනිත්තු 15ක් ඇතුළත සක්‍රිය වේ.කරුණා කර මෙයි අන්සතු කිරීමෙන් වළකින්න.\n\napp එක මෙතැනින් ලබා ගන්න:\nhttps://drive.google.com/file/d/1qGYukWkNd039TTLFjYpdTOT7Z2HBj5tN/view?usp=sharing\n\nනමුත් app එක Install කිරීමේ දෝෂ හෝ බාධා පවතී නම්:\nhttps://amilaeduhelp.github.io/-2025/\n\nස්තුතියි- අමිල උඩවත්ත';
+    
+    const copyMsg = document.getElementById('copyMessage');
+    copyMsg.textContent = messageText;
+    copyMsg.style.display = 'block';
+    
+    navigator.clipboard.writeText(messageText);
+    
+    clearAllRows();
+    loadCredentials();
+    
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 Save to Database';
+    
+  } catch (error) {
+    console.error('Save error:', error);
+    showMessage('saveMessage', '❌ Error: ' + error.message, 'error');
+    
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 Save to Database';
+  }
+}
+
+async function loadCredentials() {
+  if (!isConnected) return;
+  
+  try {
+    const { data, error } = await dbClient
+      .from('credentials')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    const container = document.getElementById('credentialsList');
+    
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div class="empty-state">No users in database yet</div>';
+      updateStats(0, 0, 0);
+      return;
+    }
+    
+    container.innerHTML = '';
+    
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let activeToday = 0;
+    let expired = 0;
+    
+    data.forEach((cred, index) => {
+      // Parse created date - handle timezone properly
+      const createdDate = new Date(cred.created_at);
+      const expiryDays = cred.expiry_days || 365;
+      
+      // Calculate expiry by adding days (milliseconds)
+      const expiryTimestamp = createdDate.getTime() + (expiryDays * 24 * 60 * 60 * 1000);
+      const expiryDate = new Date(expiryTimestamp);
+      
+      // Compare dates without time
+      const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const expiryOnly = new Date(expiryDate.getFullYear(), expiryDate.getMonth(), expiryDate.getDate());
+      
+      const isExpired = todayOnly > expiryOnly;
+      if (isExpired) expired++;
+      
+      const lastLogin = cred.last_login ? new Date(cred.last_login) : null;
+      if (lastLogin && lastLogin >= todayStart) activeToday++;
+      
+      // Calculate remaining days
+      const daysDiff = Math.floor((expiryOnly - todayOnly) / (24 * 60 * 60 * 1000));
+      const daysRemaining = daysDiff >= 0 ? daysDiff : 0;
+      
+      const item = document.createElement('div');
+      item.className = 'credential-item';
+      item.style.borderLeft = isExpired ? '4px solid #dc3545' : '4px solid #28a745';
+      
+      item.innerHTML = `
+        <div class="credential-info">
+          <strong>${index + 1}. ${cred.access_code}</strong>
+          ${isExpired ? 
+            '<span style="color: #dc3545;">⚠️ EXPIRED</span>' : 
+            `<span style="color: #28a745;">✓ Active (${daysRemaining} days left)</span>`
+          }
+          <br>
+          <span class="date">Created: ${createdDate.toLocaleDateString('en-GB')}</span>
+          <span class="date">Duration: ${expiryDays} days</span>
+          <span class="date">Expires: ${expiryDate.toLocaleDateString('en-GB')}</span>
+          ${lastLogin ? `<span class="date">Last login: ${lastLogin.toLocaleString('en-GB')}</span>` : '<span class="date">Never logged in</span>'}
+        </div>
+        <button class="delete-btn" data-code="${cred.access_code}">🗑️ Delete</button>
+      `;
+      
+      // Add delete button event listener
+      item.querySelector('.delete-btn').addEventListener('click', function() {
+        deleteUser(this.getAttribute('data-code'));
+      });
+      
+      container.appendChild(item);
+    });
+    
+    updateStats(data.length, activeToday, expired);
+    
+  } catch (error) {
+    console.error('Load error:', error);
+    document.getElementById('credentialsList').innerHTML = 
+      '<div class="empty-state" style="color: #dc3545;">Error loading credentials</div>';
+  }
+}
+
+async function deleteUser(accessCode) {
+  if (!confirm(`Delete user "${accessCode}"? This cannot be undone.`)) return;
+  
+  try {
+    const { error } = await dbClient
+      .from('credentials')
+      .delete()
+      .eq('access_code', accessCode);
+    
+    if (error) throw error;
+    
+    loadCredentials();
+    showMessage('saveMessage', `✅ User "${accessCode}" deleted successfully`, 'success');
+    
+  } catch (error) {
+    alert('Error deleting user: ' + error.message);
+  }
+}
+
+function updateStats(total, active, expired) {
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statActive').textContent = active;
+  document.getElementById('statExpired').textContent = expired;
+}
+
+// Event Listeners
+document.getElementById('connectBtn').addEventListener('click', connectSupabase);
+document.getElementById('testBtn').addEventListener('click', testConnection);
+document.getElementById('addBtn').addEventListener('click', addRow);
+document.getElementById('clearBtn').addEventListener('click', clearAllRows);
+document.getElementById('saveBtn').addEventListener('click', saveToSupabase);
+document.getElementById('refreshBtn').addEventListener('click', loadCredentials);
+document.getElementById('customDays').addEventListener('change', setCustomExpiry);
+
+// Expiry button event listeners
+document.getElementById('expiryOptions').addEventListener('click', function(e) {
+  if (e.target.classList.contains('expiry-btn')) {
+    const days = parseInt(e.target.getAttribute('data-days'));
+    setExpiry(days);
+  }
+});
+
+// Load saved credentials on page load
+window.addEventListener('DOMContentLoaded', () => {
+  const savedUrl = localStorage.getItem('supabase_url');
+  const savedKey = localStorage.getItem('supabase_key');
+  
+  if (savedUrl && savedKey) {
+    document.getElementById('supabaseUrl').value = savedUrl;
+    document.getElementById('supabaseKey').value = savedKey;
+    connectSupabase();
+  }
+});
+</script>
+
+</body>
+</html>
