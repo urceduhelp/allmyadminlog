@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>පන්ති වාර්තාව — Admin</title>
+<style>
+  :root{
+    --paper:#FAF6ED;
+    --paper-line:#E3DACB;
+    --ink:#22272E;
+    --ink-soft:#5B5347;
+    --navy:#1E3A5F;
+    --navy-deep:#152A45;
+    --grade-a:#2D6A4F;
+    --grade-b:#3A7CA5;
+    --grade-c:#C99A2E;
+    --grade-s:#D97C3D;
+    --grade-w:#B23A48;
+    --danger:#B23A48;
+    --none:#8B8578;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans Sinhala','Iskoola Pota','Yaldevi',system-ui,sans-serif;
+    line-height:1.55;
+  }
+  header.hero{
+    background:linear-gradient(180deg,var(--navy) 0%, var(--navy-deep) 100%);
+    color:#F3EFE4;
+    padding:44px 24px 52px;
+  }
+  .hero-inner{ max-width:960px; margin:0 auto; }
+  .hero-inner h1{
+    font-family:Georgia,'Noto Serif Sinhala',serif;
+    font-size:2rem;
+    margin:0 0 6px;
+  }
+  .hero-inner p{ margin:0; color:#C9D3DE; font-size:0.98rem; }
+
+  main{ max-width:960px; margin:-28px auto 60px; padding:0 20px; }
+
+  section.card{
+    background:#fff;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    padding:24px;
+    margin-bottom:24px;
+  }
+  section.card h2{
+    font-family:Georgia,'Noto Serif Sinhala',serif;
+    font-size:1.15rem;
+    margin:0 0 16px;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--paper-line);
+    color:var(--navy-deep);
+  }
+
+  /* ---- gate ---- */
+  #gateCard .field{ max-width:320px; }
+  .field label{ display:block; font-size:0.85rem; color:var(--ink-soft); margin-bottom:6px; }
+  .field input, .field select{
+    width:100%;
+    padding:10px 11px;
+    border:1px solid var(--paper-line);
+    border-radius:4px;
+    font-size:0.96rem;
+    font-family:inherit;
+    background:#FDFBF6;
+    color:var(--ink);
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--navy); outline-offset:1px; }
+
+  button{ font-family:inherit; cursor:pointer; }
+  button.primary{
+    padding:10px 18px;
+    background:var(--navy);
+    color:#F3EFE4;
+    border:none;
+    border-radius:4px;
+    font-size:0.95rem;
+  }
+  button.primary:hover{ background:var(--navy-deep); }
+  button.primary:disabled{ opacity:0.55; cursor:default; }
+  button.subtle{
+    padding:7px 12px;
+    background:transparent;
+    border:1px solid var(--paper-line);
+    border-radius:4px;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+  }
+  button.subtle:hover{ background:var(--paper); }
+  button.subtle.active{
+    background:var(--navy);
+    border-color:var(--navy);
+    color:#F3EFE4;
+  }
+  button.danger-link{
+    padding:7px 10px;
+    background:transparent;
+    border:1px solid var(--danger);
+    color:var(--danger);
+    border-radius:4px;
+    font-size:0.82rem;
+  }
+  button.danger-link:hover{ background:var(--danger); color:#fff; }
+  button.tiny-x{
+    background:transparent;
+    border:none;
+    color:var(--danger);
+    font-size:0.95rem;
+    line-height:1;
+    padding:0 2px;
+    cursor:pointer;
+  }
+
+  .msg{ font-size:0.88rem; margin-top:10px; display:none; }
+  .msg.error{ color:var(--danger); }
+  .msg.success{ color:var(--grade-a); }
+
+  /* ---- add-student form ---- */
+  .grid-form{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:14px;
+    align-items:end;
+  }
+  .grid-form .full{ grid-column:1/-1; }
+
+  /* ---- table ---- */
+  .table-toolbar{
+    display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;
+  }
+  .table-toolbar input{
+    flex:1; min-width:180px;
+    padding:9px 11px;
+    border:1px solid var(--paper-line);
+    border-radius:4px;
+    font-family:inherit;
+    background:#FDFBF6;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:0.92rem;
+  }
+  thead th{
+    text-align:left;
+    padding:8px 8px;
+    border-bottom:2px solid var(--paper-line);
+    color:var(--ink-soft);
+    font-weight:600;
+    font-size:0.82rem;
+  }
+  tbody td{
+    padding:8px 8px;
+    border-bottom:1px solid var(--paper-line);
+    vertical-align:middle;
+  }
+  tbody tr.student-row:hover{ background:#FDFBF6; }
+  td input{
+    width:100%;
+    padding:6px 8px;
+    border:1px solid var(--paper-line);
+    border-radius:4px;
+    font-family:inherit;
+    font-size:0.9rem;
+    background:#fff;
+  }
+  .avg-cell{ line-height:1.3; }
+  .avg-cell .avg-num{ font-size:1rem; font-weight:600; }
+  .avg-cell .avg-count{ font-size:0.76rem; color:var(--ink-soft); display:block; }
+  .badge{
+    display:inline-block;
+    padding:2px 9px;
+    border-radius:20px;
+    font-size:0.78rem;
+    font-weight:bold;
+    color:#fff;
+  }
+  .badge.a{ background:var(--grade-a); }
+  .badge.b{ background:var(--grade-b); }
+  .badge.c{ background:var(--grade-c); }
+  .badge.s{ background:var(--grade-s); }
+  .badge.w{ background:var(--grade-w); }
+  .badge.none{ background:var(--none); }
+  .row-actions{ display:flex; gap:6px; white-space:nowrap; }
+  .empty-row td{ text-align:center; color:var(--ink-soft); padding:24px 0; }
+
+  /* ---- test-scores sub-panel ---- */
+  tr.test-panel-row{ display:none; }
+  tr.test-panel-row.open{ display:table-row; }
+  tr.test-panel-row td{
+    background:var(--paper);
+    padding:14px 16px;
+    border-bottom:1px solid var(--paper-line);
+  }
+  .test-chip-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .test-chip{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:#fff;
+    border:1px solid var(--paper-line);
+    border-radius:5px;
+    padding:5px 6px 5px 10px;
+    font-size:0.85rem;
+  }
+  .test-chip .chip-label{ color:var(--ink-soft); font-size:0.76rem; margin-right:2px; }
+  .test-chip-empty{ font-size:0.85rem; color:var(--ink-soft); margin-bottom:12px; }
+  .add-test-form{
+    display:flex;
+    gap:8px;
+    align-items:end;
+    flex-wrap:wrap;
+  }
+  .add-test-form .mini-field{ display:flex; flex-direction:column; gap:4px; }
+  .add-test-form .mini-field label{ font-size:0.76rem; color:var(--ink-soft); }
+  .add-test-form input{
+    padding:7px 9px;
+    border:1px solid var(--paper-line);
+    border-radius:4px;
+    font-family:inherit;
+    font-size:0.88rem;
+    background:#fff;
+  }
+  .add-test-form input[type=number]{ width:90px; }
+  .test-panel-msg{
+    font-size:0.82rem;
+    color:var(--danger);
+    margin-top:8px;
+    display:none;
+  }
+
+  .note{ font-size:0.82rem; color:var(--ink-soft); margin-top:14px; }
+
+  /* ---- tabs ---- */
+  .tab-bar{
+    display:flex;
+    gap:8px;
+    margin-bottom:20px;
+    flex-wrap:wrap;
+  }
+  .tab-btn{
+    padding:9px 18px;
+    background:#fff;
+    border:1px solid var(--paper-line);
+    border-radius:20px;
+    font-size:0.9rem;
+    color:var(--ink-soft);
+  }
+  .tab-btn:hover{ background:var(--paper); }
+  .tab-btn.active{
+    background:var(--navy);
+    border-color:var(--navy);
+    color:#F3EFE4;
+  }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  /* ---- overview trend pills ---- */
+  .trend-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:3px 10px;
+    border-radius:20px;
+    font-size:0.78rem;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .trend-pill.up{ background:#DCEEE4; color:var(--grade-a); }
+  .trend-pill.down{ background:#F5DEE0; color:var(--grade-w); }
+  .trend-pill.flat{ background:#F5E9CB; color:var(--grade-c); }
+  .trend-pill.none{ background:#EDEAE0; color:var(--none); }
+
+  .rank-cell{ font-weight:600; color:var(--navy-deep); }
+
+  /* ---- marks percentage tab ---- */
+  .embed-toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .embed-toolbar a{
+    font-size:0.85rem;
+    color:var(--navy);
+    text-decoration:none;
+    border:1px solid var(--paper-line);
+    border-radius:4px;
+    padding:7px 12px;
+  }
+  .embed-toolbar a:hover{ background:var(--paper); }
+  .embed-frame{
+    width:100%;
+    height:75vh;
+    min-height:480px;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    background:#fff;
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <h1>Admin — දත්ත කළමනාකරණය</h1>
+    <p>සිසුන් එකතු කිරීම, පරීක්ෂණ ලකුණු එකතු කිරීම සහ ඉදිරි පාඩම් මාතෘකා සැකසීම.</p>
+  </div>
+</header>
+
+<main>
+
+  <section class="card" id="gateCard">
+    <h2>Admin පිවිසුම</h2>
+    <div class="field">
+      <label for="gateInput">Access Code</label>
+      <input type="password" id="gateInput" placeholder="access code යොදන්න">
+    </div>
+    <button class="primary" id="gateBtn" style="margin-top:12px;">පිවිසෙන්න</button>
+    <p class="msg error" id="gateMsg">Access code වැරදියි.</p>
+    <p class="note">මෙය සරල client-side ආරක්ෂාවක් පමණි. සැබෑ ආරක්ෂාව සඳහා Supabase Row Level Security (RLS) සහ නිසි authentication භාවිතා කිරීම නිර්දේශ කරමි.</p>
+  </section>
+
+  <div id="adminArea" style="display:none;">
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="entry">දත්ත ඇතුළත් කිරීම</button>
+      <button class="tab-btn" data-tab="overview">සමස්ත වාර්තාව</button>
+      <button class="tab-btn" data-tab="topics">පාඩම් මාතෘකා</button>
+      <button class="tab-btn" data-tab="links">බාහිර සබැඳි</button>
+      <button class="tab-btn" data-tab="marks">ලකුණු ප්‍රතිශතය</button>
+    </div>
+
+    <div id="tab-entry" class="tab-panel active">
+
+    <section class="card">
+      <h2>නව සිසුවෙකු එකතු කරන්න</h2>
+      <div class="grid-form">
+        <div class="field">
+          <label for="newName">නම</label>
+          <input type="text" id="newName">
+        </div>
+        <div class="field">
+          <label for="newPassword">Password</label>
+          <input type="text" id="newPassword">
+        </div>
+        <div class="full">
+          <button class="primary" id="addBtn">සිසුවා එකතු කරන්න</button>
+        </div>
+      </div>
+      <p class="msg error" id="addError"></p>
+      <p class="msg success" id="addSuccess"></p>
+      <p class="note">සිසුවා එකතු කළායින් පසු, පහත වගුවේ ඔහුගේ/ඇයගේ පේළියෙන් "පරීක්ෂණ" බොත්තම ඔබා පළමු පරීක්ෂණ ලකුණු එකතු කරන්න.</p>
+    </section>
+
+    <section class="card">
+      <h2>සියලුම සිසුන් (<span id="rowCount">0</span>)</h2>
+      <div class="table-toolbar">
+        <input type="text" id="searchInput" placeholder="නමින් සොයන්න...">
+        <button class="subtle" id="refreshBtn">නැවත පූරණය කරන්න</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>නම</th>
+              <th>Password</th>
+              <th>සාමාන්‍ය ලකුණු</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr class="empty-row"><td colspan="5">පූරණය වෙමින්...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="msg error" id="tableError"></p>
+      <p class="note">"සාමාන්‍ය ලකුණු" සහ "Status" සෑමවිටම <code>test_scores</code> එකේ ඇති පරීක්ෂණ ලකුණු වලින් ස්වයංක්‍රීයව ගණනය කෙරේ. පරීක්ෂණ ලකුණු නොමැති නම් පමණි පැරණි <code>marks</code> column එක භාවිතා වන්නේ.</p>
+    </section>
+
+    </div><!-- /tab-entry -->
+
+    <div id="tab-overview" class="tab-panel">
+
+    <section class="card">
+      <h2>සමස්ත සිසුන් වාර්තාව</h2>
+      <div class="table-toolbar">
+        <input type="text" id="overviewSearch" placeholder="නමින් සොයන්න...">
+        <button class="subtle" id="overviewRefreshBtn">නැවත පූරණය කරන්න</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ස්ථානය</th>
+              <th>නම</th>
+              <th>සාමාන්‍ය ලකුණු</th>
+              <th>Status</th>
+              <th>පරීක්ෂණ ගණන</th>
+              <th>ප්‍රවණතාව</th>
+            </tr>
+          </thead>
+          <tbody id="overviewBody">
+            <tr class="empty-row"><td colspan="6">පූරණය වෙමින්...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">ස්ථානය ගණනය කරන්නේ අවම වශයෙන් එක් ලකුණු වාර්තාවක් ඇති සිසුන් අතරින් සාමාන්‍ය ලකුණු අනුව අඩුවෙන් වැඩියටයි. ලකුණු නොමැති සිසුන් ස්ථානගත නොකෙරේ. ප්‍රවණතාව ගණනය කිරීමට අවම වශයෙන් පරීක්ෂණ 2ක් අවශ්‍යයි.</p>
+    </section>
+
+    </div><!-- /tab-overview -->
+
+    <div id="tab-topics" class="tab-panel">
+
+    <section class="card">
+      <h2>නව මාතෘකාවක් එකතු කරන්න</h2>
+      <div class="grid-form">
+        <div class="field">
+          <label for="newInstitute">ආයතනය</label>
+          <input type="text" id="newInstitute" placeholder="උදා: Xenon">
+        </div>
+        <div class="field">
+          <label for="newTopicDate">දිනය</label>
+          <input type="date" id="newTopicDate">
+        </div>
+        <div class="field full">
+          <label for="newTopicText">මාතෘකාව</label>
+          <input type="text" id="newTopicText" placeholder="උදා: ලංකාවේ භූගෝලීය ලක්ෂණ">
+        </div>
+        <div class="full">
+          <button class="primary" id="addTopicBtn">මාතෘකාව එකතු කරන්න</button>
+        </div>
+      </div>
+      <p class="msg error" id="addTopicError"></p>
+      <p class="msg success" id="addTopicSuccess"></p>
+      <p class="note">මෙය කිසිදු සිසුවෙකුට පෞද්ගලික නොවේ — සියලුම ආයතන වල සිසුන් සඳහා පොදුවේ පෙන්වන මීළඟ පරීක්ෂණ මාතෘකා ලැයිස්තුවකි. සිසුන්ගේ report page එකේ මෙය login නොකර ම පෙන්වයි.</p>
+    </section>
+
+    <section class="card">
+      <h2>ඉදිරි පාඩම් මාතෘකා ලැයිස්තුව</h2>
+      <div class="table-toolbar">
+        <button class="subtle" id="topicsRefreshBtn">නැවත පූරණය කරන්න</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ආයතනය</th>
+              <th>දිනය</th>
+              <th>මාතෘකාව</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="topicsAdminBody">
+            <tr class="empty-row"><td colspan="4">පූරණය වෙමින්...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="msg error" id="topicsAdminError"></p>
+      <p class="note">මෙම ලැයිස්තුව <code>upcoming_topics</code> නමැති වෙනම Supabase table එකක සුරකින ලැබේ (student/password data වලින් වෙන් වශයෙන්).</p>
+    </section>
+
+    </div><!-- /tab-topics -->
+
+    <div id="tab-links" class="tab-panel">
+
+    <section class="card">
+      <h2>නව සබැඳියක් එකතු කරන්න</h2>
+      <div class="grid-form">
+        <div class="field full">
+          <label for="newLinkName">නම (link එකේ label එක)</label>
+          <input type="text" id="newLinkName" placeholder="උදා: ඔබට අවශ්‍ය හිස් සිතියම් pdf ලබාගන්න">
+        </div>
+        <div class="field full">
+          <label for="newLinkUrl">සබැඳිය (URL)</label>
+          <input type="text" id="newLinkUrl" placeholder="උදා: www.eduhelp.lk">
+        </div>
+        <div class="full">
+          <button class="primary" id="addLinkBtn">සබැඳිය එකතු කරන්න</button>
+        </div>
+      </div>
+      <p class="msg error" id="addLinkError"></p>
+      <p class="msg success" id="addLinkSuccess"></p>
+      <p class="note">මෙය සියලුම සිසුන්ට පොදුවේ පෙන්වන "වැදගත් බැහිර සබැඳි" ලැයිස්තුවකි. click කළ විට අදාළ සබැඳිය අලුත් tab එකකින් විවෘත වේ.</p>
+    </section>
+
+    <section class="card">
+      <h2>බැහිර සබැඳි ලැයිස්තුව</h2>
+      <div class="table-toolbar">
+        <button class="subtle" id="linksRefreshBtn">නැවත පූරණය කරන්න</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>නම</th>
+              <th>URL</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="linksAdminBody">
+            <tr class="empty-row"><td colspan="3">පූරණය වෙමින්...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="msg error" id="linksAdminError"></p>
+      <p class="note">මෙම ලැයිස්තුව <code>external_links</code> නමැති වෙනම Supabase table එකක සුරකින ලැබේ.</p>
+    </section>
+
+    </div><!-- /tab-links -->
+
+    <div id="tab-marks" class="tab-panel">
+
+    <section class="card">
+      <h2>ලකුණු ප්‍රතිශතය</h2>
+      <div class="embed-toolbar">
+        <span class="note" style="margin:0;">marks_percentage.html පිටුව මෙහි පෙන්වයි.</span>
+        <a href="marks_percentage.html" target="_blank" rel="noopener">අලුත් tab එකකින් විවෘත කරන්න ↗</a>
+      </div>
+      <iframe id="marksFrame" class="embed-frame" title="ලකුණු ප්‍රතිශතය"></iframe>
+    </section>
+
+    </div><!-- /tab-marks -->
+
+  </div><!-- /adminArea -->
+
+</main>
+
+<script>
+const SUPABASE_URL = "https://uqgzlaxsnknheoerbfus.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxZ3psYXhzbmtuaGVvZXJiZnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5MjM2MTUsImV4cCI6MjA3OTI4MzYxNX0.IYWZ7ukx8J-GJMWy7cMk2BWnmzJmJjjE93yEmJie7nQ";
+const TABLE = "class_report";
+const TOPICS_TABLE = "upcoming_topics"; // shared, institute-wide schedule — not per-student
+const LINKS_TABLE = "external_links"; // shared external-link list — not per-student
+const ADMIN_CODE = "1981##Eduhelp"; // *** මෙය වෙනස් කර ගන්න ***
+
+function sbHeaders(extra){
+  return Object.assign({
+    "apikey": SUPABASE_ANON_KEY,
+    "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+    "Content-Type": "application/json"
+  }, extra || {});
+}
+
+function statusFromMarks(marks){
+  if (marks < 40) return "W";
+  if (marks < 60) return "S";
+  if (marks < 70) return "C";
+  if (marks < 80) return "B";
+  return "A";
+}
+
+function average(arr){
+  if (!arr.length) return 0;
+  return arr.reduce((a,b)=>a+b,0) / arr.length;
+}
+
+/* safely turn whatever comes back from the jsonb column into an array */
+function parseTestScores(raw){
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string" && raw.trim()){
+    try{
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    }catch(e){
+      return [];
+    }
+  }
+  return [];
+}
+
+function sortedTestScores(row){
+  const scores = parseTestScores(row.test_scores);
+  scores.sort((a,b) => {
+    if (a.test_no != null && b.test_no != null) return a.test_no - b.test_no;
+    if (a.test_date && b.test_date) return new Date(a.test_date) - new Date(b.test_date);
+    return 0;
+  });
+  return scores;
+}
+
+/* a student's average marks + whether it's coming from test history:
+   prefer test_scores, fall back to the single legacy `marks` column */
+function studentStats(row){
+  const scores = sortedTestScores(row);
+  const marksArr = scores.map(s => Number(s.marks)).filter(n => !isNaN(n));
+  if (marksArr.length){
+    return { avg: average(marksArr), count: marksArr.length, hasMarks: true, fromHistory: true, scores };
+  }
+  const single = Number(row.marks);
+  if (!isNaN(single) && row.marks !== null && row.marks !== undefined){
+    return { avg: single, count: 0, hasMarks: true, fromHistory: false, scores };
+  }
+  return { avg: 0, count: 0, hasMarks: false, fromHistory: false, scores };
+}
+
+/* simple least-squares regression, returns {slope, intercept} */
+function linearRegression(values){
+  const n = values.length;
+  if (n < 2) return { slope: 0, intercept: values[0] || 0 };
+  let sumX=0, sumY=0, sumXY=0, sumXX=0;
+  values.forEach((y,x)=>{
+    sumX += x; sumY += y; sumXY += x*y; sumXX += x*x;
+  });
+  const denom = (n*sumXX - sumX*sumX) || 1;
+  const slope = (n*sumXY - sumX*sumY) / denom;
+  const intercept = (sumY - slope*sumX) / n;
+  return { slope, intercept };
+}
+
+/* returns null if there aren't enough tests to judge a trend */
+function computeTrend(marksArr){
+  if (marksArr.length < 2) return null;
+  const { slope } = linearRegression(marksArr);
+  const UP_THRESHOLD = 0.4;
+  const DOWN_THRESHOLD = -0.4;
+  if (slope > UP_THRESHOLD) return { key: "up", arrow: "↗", label: "වර්ධනය වෙමින්" };
+  if (slope < DOWN_THRESHOLD) return { key: "down", arrow: "↘", label: "අවනතිය" };
+  return { key: "flat", arrow: "→", label: "ස්ථාවරයි" };
+}
+
+/* ---------------- Access gate ---------------- */
+document.getElementById("gateBtn").addEventListener("click", () => {
+  const val = document.getElementById("gateInput").value;
+  const msg = document.getElementById("gateMsg");
+  if (val === ADMIN_CODE){
+    document.getElementById("gateCard").style.display = "none";
+    document.getElementById("adminArea").style.display = "block";
+    loadStudents();
+    loadTopicsAdmin();
+    loadLinksAdmin();
+  }else{
+    msg.style.display = "block";
+  }
+});
+document.getElementById("gateInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") document.getElementById("gateBtn").click();
+});
+
+/* ---------------- Add-student form ---------------- */
+document.getElementById("addBtn").addEventListener("click", async () => {
+  const addError = document.getElementById("addError");
+  const addSuccess = document.getElementById("addSuccess");
+  addError.style.display = "none";
+  addSuccess.style.display = "none";
+
+  const name = document.getElementById("newName").value.trim();
+  const password = document.getElementById("newPassword").value;
+
+  if (!name || !password){
+    addError.textContent = "නම සහ password අවශ්‍යයි.";
+    addError.style.display = "block";
+    return;
+  }
+
+  const addBtn = document.getElementById("addBtn");
+  addBtn.disabled = true;
+  addBtn.textContent = "එකතු කරමින්...";
+
+  try{
+    const body = {
+      name: name,
+      password: password,
+      marks: null,
+      status: null,
+      test_scores: []
+    };
+    const res = await fetch(SUPABASE_URL + TABLE, {
+      method: "POST",
+      headers: sbHeaders({ "Prefer": "return=representation" }),
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(await res.text());
+
+    addSuccess.textContent = name + " සාර්ථකව එකතු කරන ලදී. දැන් පහත වගුවේ 'පරීක්ෂණ' බොත්තමෙන් ලකුණු එකතු කරන්න.";
+    addSuccess.style.display = "block";
+    document.getElementById("newName").value = "";
+    document.getElementById("newPassword").value = "";
+
+    loadStudents();
+  }catch(err){
+    addError.textContent = "එකතු කිරීමට නොහැකි විය. නැවත උත්සාහ කරන්න.";
+    addError.style.display = "block";
+  }finally{
+    addBtn.disabled = false;
+    addBtn.textContent = "සිසුවා එකතු කරන්න";
+  }
+});
+
+/* ---------------- Load & render table ---------------- */
+let allStudents = [];
+const openPanelIds = new Set(); // remembers which test-panels are expanded across re-renders
+
+async function loadStudents(){
+  const tableBody = document.getElementById("tableBody");
+  const tableError = document.getElementById("tableError");
+  tableError.style.display = "none";
+  tableBody.innerHTML = '<tr class="empty-row"><td colspan="5">පූරණය වෙමින්...</td></tr>';
+
+  try{
+    const url = SUPABASE_URL + TABLE + "?select=*&order=id.asc";
+    const res = await fetch(url, { headers: sbHeaders() });
+    if (!res.ok) throw new Error("request failed");
+    allStudents = await res.json();
+    renderTable(allStudents);
+    renderOverview(currentOverviewFilter());
+  }catch(err){
+    tableBody.innerHTML = "";
+    tableError.textContent = "දත්ත ලබාගැනීමට නොහැකි විය.";
+    tableError.style.display = "block";
+  }
+}
+
+function renderTable(rows){
+  const tableBody = document.getElementById("tableBody");
+  document.getElementById("rowCount").textContent = rows.length;
+
+  if (rows.length === 0){
+    tableBody.innerHTML = '<tr class="empty-row"><td colspan="5">සිසුන් නොමැත.</td></tr>';
+    return;
+  }
+
+  tableBody.innerHTML = "";
+  rows.forEach(student => {
+    const stats = studentStats(student);
+    const statusKey = stats.hasMarks ? statusFromMarks(stats.avg) : null;
+
+    const tr = document.createElement("tr");
+    tr.className = "student-row";
+    tr.dataset.id = student.id;
+
+    const countLabel = stats.fromHistory
+      ? (stats.count + " පරීක්ෂණ")
+      : (stats.hasMarks ? "පැරණි වාර්තාව" : "ලකුණු නැත");
+
+    tr.innerHTML = `
+      <td><input type="text" class="edit-name" value="${escapeAttr(student.name || "")}"></td>
+      <td><input type="text" class="edit-password" value="${escapeAttr(student.password || "")}"></td>
+      <td>
+        <div class="avg-cell">
+          <span class="avg-num">${stats.hasMarks ? stats.avg.toFixed(1) : "—"}</span>
+          <span class="avg-count">${countLabel}</span>
+        </div>
+      </td>
+      <td><span class="badge ${statusKey ? statusKey.toLowerCase() : "none"}">${statusKey || "—"}</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="subtle save-btn">සුරකින්න</button>
+          <button class="subtle test-toggle-btn">පරීක්ෂණ</button>
+          <button class="danger-link delete-btn">මකන්න</button>
+        </div>
+      </td>
+    `;
+    tableBody.appendChild(tr);
+
+    const panelTr = document.createElement("tr");
+    panelTr.className = "test-panel-row";
+    panelTr.dataset.id = student.id;
+    panelTr.innerHTML = `<td colspan="5">${buildTestPanelHtml(student.id)}</td>`;
+    tableBody.appendChild(panelTr);
+
+    if (openPanelIds.has(String(student.id))){
+      panelTr.classList.add("open");
+      tr.querySelector(".test-toggle-btn").classList.add("active");
+    }
+
+    fillTestPanel(panelTr, stats.scores);
+  });
+
+  tableBody.querySelectorAll(".save-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => saveRow(e.target.closest("tr")));
+  });
+  tableBody.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => deleteRow(e.target.closest("tr")));
+  });
+  tableBody.querySelectorAll(".test-toggle-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => toggleTestPanel(e.target.closest("tr")));
+  });
+}
+
+function buildTestPanelHtml(id){
+  const today = new Date().toISOString().slice(0,10);
+  return `
+    <div class="test-chip-list" id="chips-${id}"></div>
+    <div class="add-test-form">
+      <div class="mini-field">
+        <label>ලකුණු</label>
+        <input type="number" class="new-test-marks" min="0" max="100" placeholder="0-100">
+      </div>
+      <div class="mini-field">
+        <label>දිනය</label>
+        <input type="date" class="new-test-date" value="${today}">
+      </div>
+      <button class="subtle add-test-btn">+ එකතු කරන්න</button>
+    </div>
+    <p class="test-panel-msg"></p>
+  `;
+}
+
+function fillTestPanel(panelTr, scores){
+  const id = panelTr.dataset.id;
+  const chipList = panelTr.querySelector("#chips-" + id);
+
+  if (!scores.length){
+    chipList.innerHTML = '<span class="test-chip-empty">තවම පරීක්ෂණ ලකුණු එකතු කර නැත.</span>';
+  }else{
+    chipList.innerHTML = "";
+    scores.forEach(s => {
+      const chip = document.createElement("div");
+      chip.className = "test-chip";
+      const label = s.test_no != null ? ("පරී. " + s.test_no) : "";
+      const dateStr = s.test_date ? s.test_date : "";
+      chip.innerHTML =
+        (label ? '<span class="chip-label">' + label + '</span>' : "") +
+        '<strong>' + s.marks + '</strong>' +
+        (dateStr ? ' <span class="chip-label">· ' + dateStr + '</span>' : "") +
+        '<button class="tiny-x" title="ඉවත් කරන්න">✕</button>';
+      chip.querySelector(".tiny-x").addEventListener("click", () => deleteTestScore(id, s.test_no));
+      chipList.appendChild(chip);
+    });
+  }
+
+  const addBtn = panelTr.querySelector(".add-test-btn");
+  addBtn.onclick = () => addTestScore(id, panelTr);
+}
+
+function toggleTestPanel(studentTr){
+  const id = studentTr.dataset.id;
+  const panelTr = studentTr.nextElementSibling; // the matching test-panel-row
+  const toggleBtn = studentTr.querySelector(".test-toggle-btn");
+  const isOpen = panelTr.classList.toggle("open");
+  toggleBtn.classList.toggle("active", isOpen);
+  if (isOpen){
+    openPanelIds.add(String(id));
+  }else{
+    openPanelIds.delete(String(id));
+  }
+}
+
+/* build the { marks, test_no, test_date } object exactly in the required
+   shape and push it into the student's test_scores array */
+async function addTestScore(id, panelTr){
+  const marksInput = panelTr.querySelector(".new-test-marks");
+  const dateInput = panelTr.querySelector(".new-test-date");
+  const msgEl = panelTr.querySelector(".test-panel-msg");
+  msgEl.style.display = "none";
+
+  const marks = Number(marksInput.value);
+  const testDate = dateInput.value;
+
+  if (marksInput.value === "" || isNaN(marks) || marks < 0 || marks > 100){
+    msgEl.textContent = "ලකුණු 0 සහ 100 අතර නිවැරදිව ඇතුළත් කරන්න.";
+    msgEl.style.display = "block";
+    return;
+  }
+  if (!testDate){
+    msgEl.textContent = "දිනය ඇතුළත් කරන්න.";
+    msgEl.style.display = "block";
+    return;
+  }
+
+  const student = allStudents.find(s => String(s.id) === String(id));
+  if (!student){
+    msgEl.textContent = "සිසුවා සොයාගත නොහැක. නැවත පූරණය කරන්න.";
+    msgEl.style.display = "block";
+    return;
+  }
+
+  const existing = sortedTestScores(student);
+  const nextTestNo = existing.length
+    ? Math.max(...existing.map(s => Number(s.test_no) || 0)) + 1
+    : 1;
+
+  const newEntry = {
+    marks: marks,
+    test_no: nextTestNo,
+    test_date: testDate
+  };
+  const updatedScores = existing.concat([newEntry]);
+
+  const addBtn = panelTr.querySelector(".add-test-btn");
+  addBtn.disabled = true;
+  addBtn.textContent = "...";
+
+  try{
+    await patchTestScores(id, updatedScores);
+    marksInput.value = "";
+    await loadStudents();
+    reopenAndFocusPanel(id);
+  }catch(err){
+    msgEl.textContent = "එකතු කිරීමට නොහැකි විය. නැවත උත්සාහ කරන්න.";
+    msgEl.style.display = "block";
+    addBtn.disabled = false;
+    addBtn.textContent = "+ එකතු කරන්න";
+  }
+}
+
+async function deleteTestScore(id, testNo){
+  const student = allStudents.find(s => String(s.id) === String(id));
+  if (!student) return;
+  const confirmed = confirm("පරීක්ෂණය " + testNo + " ඉවත් කිරීමට විශ්වාසද?");
+  if (!confirmed) return;
+
+  const existing = sortedTestScores(student);
+  const updatedScores = existing.filter(s => Number(s.test_no) !== Number(testNo));
+
+  try{
+    await patchTestScores(id, updatedScores);
+    await loadStudents();
+    reopenAndFocusPanel(id);
+  }catch(err){
+    alert("ඉවත් කිරීමට නොහැකි විය. නැවත උත්සාහ කරන්න.");
+  }
+}
+
+/* PATCH test_scores, and keep the legacy marks/status columns in sync with
+   the new average so nothing shown elsewhere (e.g. the student report page
+   or class rank/grade chart) can ever go stale. */
+async function patchTestScores(id, updatedScores){
+  const marksArr = updatedScores.map(s => Number(s.marks)).filter(n => !isNaN(n));
+  const newAvg = marksArr.length ? average(marksArr) : null;
+  const newStatus = newAvg !== null ? statusFromMarks(newAvg) : null;
+
+  const body = {
+    test_scores: updatedScores,
+    marks: newAvg !== null ? Math.round(newAvg * 10) / 10 : null,
+    status: newStatus
+  };
+  const res = await fetch(SUPABASE_URL + TABLE + "?id=eq." + encodeURIComponent(id), {
+    method: "PATCH",
+    headers: sbHeaders({ "Prefer": "return=minimal" }),
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error("request failed");
+}
+
+function reopenAndFocusPanel(id){
+  openPanelIds.add(String(id));
+  const studentTr = document.querySelector('tr.student-row[data-id="' + CSS.escape(String(id)) + '"]');
+  if (studentTr){
+    const panelTr = studentTr.nextElementSibling;
+    const toggleBtn = studentTr.querySelector(".test-toggle-btn");
+    if (panelTr){ panelTr.classList.add("open"); }
+    if (toggleBtn){ toggleBtn.classList.add("active"); }
+  }
+}
+
+function escapeAttr(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;");
+}
+
+/* ---------------- Overview tab: marks, trend, rank ---------------- */
+function currentOverviewFilter(){
+  const q = document.getElementById("overviewSearch").value.trim().toLowerCase();
+  if (!q) return allStudents;
+  return allStudents.filter(s => (s.name || "").toLowerCase().includes(q));
+}
+
+function renderOverview(rows){
+  const tbody = document.getElementById("overviewBody");
+  if (!rows.length){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">සිසුන් නොමැත.</td></tr>';
+    return;
+  }
+
+  const withStats = rows.map(row => {
+    const scores = sortedTestScores(row);
+    const marksArr = scores.map(s => Number(s.marks)).filter(n => !isNaN(n));
+    return { row, stats: studentStats(row), trend: computeTrend(marksArr) };
+  });
+
+  // rank only among students who actually have marks; students with no
+  // marks yet are shown at the bottom, unranked
+  const ranked = withStats.filter(x => x.stats.hasMarks).sort((a,b) => b.stats.avg - a.stats.avg);
+  const unranked = withStats.filter(x => !x.stats.hasMarks);
+
+  tbody.innerHTML = "";
+  ranked.forEach((x, i) => tbody.appendChild(buildOverviewRow(x, i + 1)));
+  unranked.forEach(x => tbody.appendChild(buildOverviewRow(x, null)));
+}
+
+function buildOverviewRow(x, rank){
+  const tr = document.createElement("tr");
+  const statusKey = x.stats.hasMarks ? statusFromMarks(x.stats.avg) : null;
+  const countLabel = x.stats.fromHistory ? x.stats.count : 0;
+
+  let trendHtml = '<span class="trend-pill none">—</span>';
+  if (x.trend){
+    trendHtml = '<span class="trend-pill ' + x.trend.key + '">' + x.trend.arrow + ' ' + x.trend.label + '</span>';
+  }
+
+  tr.innerHTML = `
+    <td class="rank-cell">${rank ? rank : "—"}</td>
+    <td>${escapeAttr(x.row.name || "")}</td>
+    <td>${x.stats.hasMarks ? x.stats.avg.toFixed(1) : "—"}</td>
+    <td><span class="badge ${statusKey ? statusKey.toLowerCase() : "none"}">${statusKey || "—"}</span></td>
+    <td>${countLabel}</td>
+    <td>${trendHtml}</td>
+  `;
+  return tr;
+}
+
+document.getElementById("overviewSearch").addEventListener("input", () => {
+  renderOverview(currentOverviewFilter());
+});
+document.getElementById("overviewRefreshBtn").addEventListener("click", loadStudents);
+
+/* ---------------- Tab switching ---------------- */
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    if (btn.dataset.tab === "overview"){
+      renderOverview(currentOverviewFilter());
+    }
+    if (btn.dataset.tab === "topics"){
+      loadTopicsAdmin();
+    }
+    if (btn.dataset.tab === "links"){
+      loadLinksAdmin();
+    }
+    if (btn.dataset.tab === "marks"){
+      const frame = document.getElementById("marksFrame");
+      // පළමු වතාවට tab එක ඇරෙන විට පමණක් පූරණය කරයි
+      if (!frame.getAttribute("src")){
+        frame.setAttribute("src", "marks_percentage.html");
+      }
+    }
+  });
+});
+
+/* ---------------- Institute-wide upcoming topics (separate table) ----------------
+   These are NOT tied to any student — no name/password involved. Just an
+   institute + date + topic, shown publicly on the student report page. */
+let allTopics = [];
+
+async function loadTopicsAdmin(){
+  const tbody = document.getElementById("topicsAdminBody");
+  const errEl = document.getElementById("topicsAdminError");
+  errEl.style.display = "none";
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="4">පූරණය වෙමින්...</td></tr>';
+
+  try{
+    const url = SUPABASE_URL + TOPICS_TABLE + "?select=*&order=topic_date.asc";
+    const res = await fetch(url, { headers: sbHeaders() });
+    if (!res.ok) throw new Error("request failed");
+    allTopics = await res.json();
+    renderTopicsAdmin(allTopics);
+  }catch(err){
+    tbody.innerHTML = "";
+    errEl.textContent = "මාතෘකා ලබාගැනීමට නොහැකි විය. Supabase හි 'upcoming_topics' නමින් වගුවක් නිර්මාණය කර ඇත්දැයි පරීක්ෂා කරන්න.";
+    errEl.style.display = "block";
+  }
+}
+
+function renderTopicsAdmin(rows){
+  const tbody = document.getElementById("topicsAdminBody");
+  if (!rows.length){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">මාතෘකා නොමැත.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = "";
+  rows.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.dataset.id = t.id;
+    tr.innerHTML = `
+      <td><input type="text" class="edit-institute" value="${escapeAttr(t.institute || "")}"></td>
+      <td><input type="date" class="edit-topic-date" value="${escapeAttr(t.topic_date || "")}"></td>
+      <td><input type="text" class="edit-topic-text" value="${escapeAttr(t.topic || "")}"></td>
+      <td>
+        <div class="row-actions">
+          <button class="subtle topic-save-btn">සුරකින්න</button>
+          <button class="danger-link topic-delete-btn">මකන්න</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll(".topic-save-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => saveTopicRow(e.target.closest("tr")));
+  });
+  tbody.querySelectorAll(".topic-delete-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => deleteTopicRow(e.target.closest("tr")));
+  });
+}
+
+document.getElementById("addTopicBtn").addEventListener("click", async () => {
+  const errEl = document.getElementById("addTopicError");
+  const okEl = document.getElementById("addTopicSuccess");
+  errEl.style.display = "none";
+  okEl.style.display = "none";
+
+  const institute = document.getElementById("newInstitute").value.trim();
+  const date = document.getElementById("newTopicDate").value;
+  const topic = document.getElementById("newTopicText").value.trim();
+
+  if (!institute || !date || !topic){
+    errEl.textContent = "ආයතනය, දිනය සහ මාතෘකාව සියල්ල අවශ්‍යයි.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  const btn = document.getElementById("addTopicBtn");
+  btn.disabled = true;
+  btn.textContent = "එකතු කරමින්...";
+
+  try{
+    const body = { institute: institute, topic_date: date, topic: topic };
+    const res = await fetch(SUPABASE_URL + TOPICS_TABLE, {
+      method: "POST",
+      headers: sbHeaders({ "Prefer": "return=representation" }),
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(await res.text());
+
+    okEl.textContent = "මාතෘකාව සාර්ථකව එකතු කරන ලදී.";
+    okEl.style.display = "block";
+    document.getElementById("newInstitute").value = "";
+    document.getElementById("newTopicText").value = "";
+
+    loadTopicsAdmin();
+  }catch(err){
+    errEl.textContent = "එකතු කිරීමට නොහැකි විය. 'upcoming_topics' වගුව නිර්මාණය කර ඇත්දැයි පරීක්ෂා කරන්න.";
+    errEl.style.display = "block";
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "මාතෘකාව එකතු කරන්න";
+  }
+});
+
+async function saveTopicRow(tr){
+  const id = tr.dataset.id;
+  const institute = tr.querySelector(".edit-institute").value.trim();
+  const date = tr.querySelector(".edit-topic-date").value;
+  const topic = tr.querySelector(".edit-topic-text").value.trim();
+  const saveBtn = tr.querySelector(".topic-save-btn");
+  const errEl = document.getElementById("topicsAdminError");
+  errEl.style.display = "none";
+
+  if (!institute || !date || !topic){
+    errEl.textContent = "ආයතනය, දිනය සහ මාතෘකාව සියල්ල අවශ්‍යයි.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = "...";
+
+  try{
+    const body = { institute: institute, topic_date: date, topic: topic };
+    const res = await fetch(SUPABASE_URL + TOPICS_TABLE + "?id=eq." + encodeURIComponent(id), {
+      method: "PATCH",
+      headers: sbHeaders({ "Prefer": "return=minimal" }),
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error("request failed");
+    loadTopicsAdmin();
+  }catch(err){
+    errEl.textContent = "සුරැකීමට නොහැකි විය.";
+    errEl.style.display = "block";
+    saveBtn.disabled = false;
+    saveBtn.textContent = "සුරකින්න";
+  }
+}
+
+async function deleteTopicRow(tr){
+  const id = tr.dataset.id;
+  const institute = tr.querySelector(".edit-institute").value;
+  const confirmed = confirm(institute + " සඳහා මෙම මාතෘකාව මකා දැමීමට විශ්වාසද?");
+  if (!confirmed) return;
+
+  const errEl = document.getElementById("topicsAdminError");
+  errEl.style.display = "none";
+
+  try{
+    const res = await fetch(SUPABASE_URL + TOPICS_TABLE + "?id=eq." + encodeURIComponent(id), {
+      method: "DELETE",
+      headers: sbHeaders()
+    });
+    if (!res.ok) throw new Error("request failed");
+    loadTopicsAdmin();
+  }catch(err){
+    errEl.textContent = "මකා දැමීමට නොහැකි විය.";
+    errEl.style.display = "block";
+  }
+}
+
+document.getElementById("topicsRefreshBtn").addEventListener("click", loadTopicsAdmin);
+
+/* ---------------- Institute-wide external links (separate table) ----------------
+   A shared "important links for you" list — not tied to any student, no
+   name/password involved. Shown publicly on the student report page and
+   opens in a new browser tab when clicked. */
+let allLinks = [];
+
+async function loadLinksAdmin(){
+  const tbody = document.getElementById("linksAdminBody");
+  const errEl = document.getElementById("linksAdminError");
+  errEl.style.display = "none";
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="3">පූරණය වෙමින්...</td></tr>';
+
+  try{
+    const url = SUPABASE_URL + LINKS_TABLE + "?select=*&order=id.asc";
+    const res = await fetch(url, { headers: sbHeaders() });
+    if (!res.ok) throw new Error("request failed");
+    allLinks = await res.json();
+    renderLinksAdmin(allLinks);
+  }catch(err){
+    tbody.innerHTML = "";
+    errEl.textContent = "සබැඳි ලබාගැනීමට නොහැකි විය. Supabase හි 'external_links' නමින් වගුවක් නිර්මාණය කර ඇත්දැයි පරීක්ෂා කරන්න.";
+    errEl.style.display = "block";
+  }
+}
+
+function renderLinksAdmin(rows){
+  const tbody = document.getElementById("linksAdminBody");
+  if (!rows.length){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="3">සබැඳි නොමැත.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = "";
+  rows.forEach(l => {
+    const tr = document.createElement("tr");
+    tr.dataset.id = l.id;
+    tr.innerHTML = `
+      <td><input type="text" class="edit-link-name" value="${escapeAttr(l.name || "")}"></td>
+      <td><input type="text" class="edit-link-url" value="${escapeAttr(l.url || "")}"></td>
+      <td>
+        <div class="row-actions">
+          <button class="subtle link-save-btn">සුරකින්න</button>
+          <button class="danger-link link-delete-btn">මකන්න</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll(".link-save-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => saveLinkRow(e.target.closest("tr")));
+  });
+  tbody.querySelectorAll(".link-delete-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => deleteLinkRow(e.target.closest("tr")));
+  });
+}
+
+document.getElementById("addLinkBtn").addEventListener("click", async () => {
+  const errEl = document.getElementById("addLinkError");
+  const okEl = document.getElementById("addLinkSuccess");
+  errEl.style.display = "none";
+  okEl.style.display = "none";
+
+  const name = document.getElementById("newLinkName").value.trim();
+  const linkUrl = document.getElementById("newLinkUrl").value.trim();
+
+  if (!name || !linkUrl){
+    errEl.textContent = "නම සහ URL දෙකම අවශ්‍යයි.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  const btn = document.getElementById("addLinkBtn");
+  btn.disabled = true;
+  btn.textContent = "එකතු කරමින්...";
+
+  try{
+    const body = { name: name, url: linkUrl };
+    const res = await fetch(SUPABASE_URL + LINKS_TABLE, {
+      method: "POST",
+      headers: sbHeaders({ "Prefer": "return=representation" }),
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(await res.text());
+
+    okEl.textContent = "සබැඳිය සාර්ථකව එකතු කරන ලදී.";
+    okEl.style.display = "block";
+    document.getElementById("newLinkName").value = "";
+    document.getElementById("newLinkUrl").value = "";
+
+    loadLinksAdmin();
+  }catch(err){
+    errEl.textContent = "එකතු කිරීමට නොහැකි විය. 'external_links' වගුව නිර්මාණය කර ඇත්දැයි පරීක්ෂා කරන්න.";
+    errEl.style.display = "block";
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "සබැඳිය එකතු කරන්න";
+  }
+});
+
+async function saveLinkRow(tr){
+  const id = tr.dataset.id;
+  const name = tr.querySelector(".edit-link-name").value.trim();
+  const linkUrl = tr.querySelector(".edit-link-url").value.trim();
+  const saveBtn = tr.querySelector(".link-save-btn");
+  const errEl = document.getElementById("linksAdminError");
+  errEl.style.display = "none";
+
+  if (!name || !linkUrl){
+    errEl.textContent = "නම සහ URL දෙකම අවශ්‍යයි.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = "...";
+
+  try{
+    const body = { name: name, url: linkUrl };
+    const res = await fetch(SUPABASE_URL + LINKS_TABLE + "?id=eq." + encodeURIComponent(id), {
+      method: "PATCH",
+      headers: sbHeaders({ "Prefer": "return=minimal" }),
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error("request failed");
+    loadLinksAdmin();
+  }catch(err){
+    errEl.textContent = "සුරැකීමට නොහැකි විය.";
+    errEl.style.display = "block";
+    saveBtn.disabled = false;
+    saveBtn.textContent = "සුරකින්න";
+  }
+}
+
+async function deleteLinkRow(tr){
+  const id = tr.dataset.id;
+  const name = tr.querySelector(".edit-link-name").value;
+  const confirmed = confirm('"' + name + '"' + " සබැඳිය මකා දැමීමට විශ්වාසද?");
+  if (!confirmed) return;
+
+  const errEl = document.getElementById("linksAdminError");
+  errEl.style.display = "none";
+
+  try{
+    const res = await fetch(SUPABASE_URL + LINKS_TABLE + "?id=eq." + encodeURIComponent(id), {
+      method: "DELETE",
+      headers: sbHeaders()
+    });
+    if (!res.ok) throw new Error("request failed");
+    loadLinksAdmin();
+  }catch(err){
+    errEl.textContent = "මකා දැමීමට නොහැකි විය.";
+    errEl.style.display = "block";
+  }
+}
+
+document.getElementById("linksRefreshBtn").addEventListener("click", loadLinksAdmin);
+
+/* name / password only — marks & status are managed exclusively through the
+   test-scores panel now, and topics live in the separate upcoming_topics
+   table, so neither is ever sent from here */
+async function saveRow(studentTr){
+  const id = studentTr.dataset.id;
+  const name = studentTr.querySelector(".edit-name").value.trim();
+  const password = studentTr.querySelector(".edit-password").value;
+  const saveBtn = studentTr.querySelector(".save-btn");
+  const tableError = document.getElementById("tableError");
+  tableError.style.display = "none";
+
+  if (!name){
+    tableError.textContent = "නම ඇතුළත් කරන්න.";
+    tableError.style.display = "block";
+    return;
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = "...";
+
+  try{
+    const body = {
+      name: name,
+      password: password
+    };
+    const res = await fetch(SUPABASE_URL + TABLE + "?id=eq." + encodeURIComponent(id), {
+      method: "PATCH",
+      headers: sbHeaders({ "Prefer": "return=minimal" }),
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error("request failed");
+    loadStudents();
+  }catch(err){
+    tableError.textContent = "සුරැකීමට නොහැකි විය.";
+    tableError.style.display = "block";
+    saveBtn.disabled = false;
+    saveBtn.textContent = "සුරකින්න";
+  }
+}
+
+async function deleteRow(studentTr){
+  const id = studentTr.dataset.id;
+  const name = studentTr.querySelector(".edit-name").value;
+  const confirmed = confirm(name + " මකා දැමීමට ඔබට විශ්වාසද?");
+  if (!confirmed) return;
+
+  const tableError = document.getElementById("tableError");
+  tableError.style.display = "none";
+
+  try{
+    const res = await fetch(SUPABASE_URL + TABLE + "?id=eq." + encodeURIComponent(id), {
+      method: "DELETE",
+      headers: sbHeaders()
+    });
+    if (!res.ok) throw new Error("request failed");
+    openPanelIds.delete(String(id));
+    loadStudents();
+  }catch(err){
+    tableError.textContent = "මකා දැමීමට නොහැකි විය.";
+    tableError.style.display = "block";
+  }
+}
+
+document.getElementById("refreshBtn").addEventListener("click", loadStudents);
+
+document.getElementById("searchInput").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  if (!q){
+    renderTable(allStudents);
+    return;
+  }
+  renderTable(allStudents.filter(s => (s.name || "").toLowerCase().includes(q)));
+});
+</script>
+
+</body>
+</html>
