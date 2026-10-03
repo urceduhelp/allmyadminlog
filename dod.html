@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDC දොඩන්ගොඩ - Admin Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans Sinhala', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+        }
+        
+        .label {
+            display: block;
+            margin-bottom: 10px;
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        
+        .textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            font-size: 16px;
+            font-family: 'Noto Sans Sinhala', sans-serif;
+            resize: vertical;
+            outline: none;
+        }
+        
+        .textarea:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .preview-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .preview-section.show {
+            display: block;
+        }
+        
+        .preview-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+        
+        .preview-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .preview-label {
+            font-weight: 600;
+            color: #4a5568;
+            display: inline-block;
+            min-width: 150px;
+        }
+        
+        .preview-value {
+            color: #2d3748;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Noto Sans Sinhala', sans-serif;
+            transition: all 0.3s;
+        }
+        
+        .btn-parse {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .btn-parse:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(72, 187, 120, 0.4);
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-submit:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-clear {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        .btn-clear:hover {
+            background: #cbd5e0;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .message {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+        
+        .message.show {
+            display: block;
+        }
+        
+        .message.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 2px solid #48bb78;
+        }
+        
+        .message.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 2px solid #e53e3e;
+        }
+        
+        .instructions {
+            background: #edf2f7;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .instructions h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            color: #4a5568;
+            line-height: 1.8;
+        }
+        
+        @media (max-width: 640px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CDC දොඩන්ගොඩ</h1>
+        <div class="subtitle">Admin Panel - ව්‍යාපාර ලියාපදිංචිය</div>
+        
+        <div class="instructions">
+            <h3>භාවිතා කරන්නේ කෙසේද:</h3>
+            <ul>
+                <li>ලැබුණු registration text එක පහත box එකේ paste කරන්න</li>
+                <li>"Parse කරන්න" button එක click කරන්න</li>
+                <li>Preview එක check කරන්න</li>
+                <li>"Database එකට Add කරන්න" button එක click කරන්න</li>
+            </ul>
+        </div>
+        
+        <div class="input-section">
+            <label class="label">Registration Text:</label>
+            <textarea class="textarea" id="inputText" placeholder="CDC දොඩන්ගොඩ - ව්‍යාපාර ලියාපදිංචිය
+ව්‍යාපාර වර්ගය: පෞද්ගලික සේවා
+උප වර්ගය: පෙදරේරු
+උප වර්ග කේතය: car001
+ව්‍යාපාර නාමය: පෙදරේරු
+හිමිකරුගේ නම: චමින්ද
+දුරකතන අංකය: 0768663542
+විද්‍යුත් තැපෑල: නැත
+ව්‍යාපාරික ස්ථානය: වෙල්ඩ්‍රිම් පාර්ක්"></textarea>
+        </div>
+        
+        <div class="preview-section" id="previewSection">
+            <div class="preview-title">📋 Preview - Database එකට යන දත්ත:</div>
+            <div id="previewContent"></div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn btn-parse" id="parseBtn">Parse කරන්න</button>
+            <button class="btn btn-submit" id="submitBtn" disabled>Database එකට Add කරන්න</button>
+            <button class="btn btn-clear" id="clearBtn">Clear කරන්න</button>
+        </div>
+        
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://jcijglwpkfluyzrltimk.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjaWpnbHdwa2ZsdXl6cmx0aW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MzU3OTUsImV4cCI6MjA4MjQxMTc5NX0.dvT8OiyVEiYn_DhkMakmSq1Vvr4REDr0kYPnyqCtWHs';
+        
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let parsedData = null;
+        
+        const categoryMap = {
+            'පූජ්‍යස්ථාන': 'npo',
+            'පෞද්ගලික සේවා': 'pvts',
+            'පෞද්ගලික භාණ්ඩ': 'pvtg',
+            'රාජ්‍ය සේවා': 'govs',
+            'රාජ්‍ය භාණ්ඩ': 'govg'
+        };
+        
+        function parseRegistrationText(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            const data = {};
+            
+            lines.forEach(line => {
+                if (line.includes(':')) {
+                    const parts = line.split(':');
+                    const key = parts[0].trim();
+                    const value = parts.slice(1).join(':').trim();
+                    
+                    // Category matching - flexible to handle different variations
+                    if (key.includes('වර්ගය') && !key.includes('උප')) {
+                        data.category = value;
+                    } else if (key === 'උප වර්ගය') {
+                        data.subcategory = value;
+                    } else if (key === 'උප වර්ග කේතය') {
+                        data.subcategoryCode = value;
+                    } else if (key.includes('නාමය') && !key.includes('හිමිකරු') && !key.includes('භාරකරු')) {
+                        data.businessName = value;
+                    } else if (key.includes('හිමිකරු') || key.includes('භාරකරු') || key.includes('අධිපති')) {
+                        data.ownerName = value;
+                    } else if (key.includes('දුරකතන')) {
+                        data.phoneNumber = value;
+                    } else if (key.includes('විද්‍යුත්')) {
+                        data.email = value === 'නැත' || value === 'නෑ' ? null : value;
+                    } else if (key.includes('ස්ථානය')) {
+                        data.businessPlace = value;
+                    }
+                }
+            });
+            
+            // Construct b_name
+            const categoryPrefix = categoryMap[data.category];
+            if (!categoryPrefix) {
+                throw new Error('වලංගු නොවන ව්‍යාපාර වර්ගයක්: ' + data.category);
+            }
+            
+            data.b_name = `${categoryPrefix}_${data.businessName}`;
+            
+            return {
+                b_name: data.b_name,
+                p_name: data.ownerName,
+                t_number: data.phoneNumber,
+                e_mail: data.email,
+                b_s_place: data.businessPlace,
+                sub_cat: data.subcategoryCode || null
+            };
+        }
+        
+        function showPreview(data) {
+            const previewSection = document.getElementById('previewSection');
+            const previewContent = document.getElementById('previewContent');
+            
+            previewContent.innerHTML = `
+                <div class="preview-item">
+                    <span class="preview-label">b_name:</span>
+                    <span class="preview-value">${data.b_name}</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">p_name:</span>
+                    <span class="preview-value">${data.p_name}</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">t_number:</span>
+                    <span class="preview-value">${data.t_number}</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">e_mail:</span>
+                    <span class="preview-value">${data.e_mail || 'නැත'}</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">b_s_place:</span>
+                    <span class="preview-value">${data.b_s_place}</span>
+                </div>
+                <div class="preview-item">
+                    <span class="preview-label">sub_cat:</span>
+                    <span class="preview-value">${data.sub_cat || 'නැත'}</span>
+                </div>
+            `;
+            
+            previewSection.classList.add('show');
+        }
+        
+        function showMessage(text, type) {
+            const message = document.getElementById('message');
+            message.textContent = text;
+            message.className = `message show ${type}`;
+            
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 5000);
+        }
+        
+        document.getElementById('parseBtn').addEventListener('click', () => {
+            const inputText = document.getElementById('inputText').value.trim();
+            
+            if (!inputText) {
+                showMessage('කරුණාකර registration text එක ඇතුළත් කරන්න', 'error');
+                return;
+            }
+            
+            try {
+                parsedData = parseRegistrationText(inputText);
+                showPreview(parsedData);
+                document.getElementById('submitBtn').disabled = false;
+                showMessage('දත්ත සාර්ථකව parse කරන ලදී!', 'success');
+            } catch (error) {
+                showMessage('දෝෂයක්: ' + error.message, 'error');
+                parsedData = null;
+                document.getElementById('submitBtn').disabled = true;
+            }
+        });
+        
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            if (!parsedData) {
+                showMessage('කරුණාකර පළමුව දත්ත parse කරන්න', 'error');
+                return;
+            }
+            
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').textContent = 'Adding...';
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('cdcd800')
+                    .insert([parsedData]);
+                
+                if (error) throw error;
+                
+                showMessage('දත්ත සාර්ථකව database එකට add කරන ලදී! ✓', 'success');
+                
+                // Clear form after 2 seconds
+                setTimeout(() => {
+                    document.getElementById('inputText').value = '';
+                    document.getElementById('previewSection').classList.remove('show');
+                    parsedData = null;
+                    document.getElementById('submitBtn').textContent = 'Database එකට Add කරන්න';
+                }, 2000);
+                
+            } catch (error) {
+                showMessage('Database error: ' + error.message, 'error');
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').textContent = 'Database එකට Add කරන්න';
+            }
+        });
+        
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            document.getElementById('inputText').value = '';
+            document.getElementById('previewSection').classList.remove('show');
+            document.getElementById('message').classList.remove('show');
+            parsedData = null;
+            document.getElementById('submitBtn').disabled = true;
+        });
+    </script>
+</body>
+</html>
