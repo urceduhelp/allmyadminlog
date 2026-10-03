@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>නව Author ලියාපදිංචිය</title>
+<style>
+  :root{
+    --paper:#EFE9DC;
+    --paper-raised:#F7F3E9;
+    --ink:#26221A;
+    --ink-soft:#5B564A;
+    --line:#D9D1BE;
+    --maroon:#7A2E2E;
+    --maroon-dark:#5E2222;
+    --brass:#A9822C;
+    --sage:#5C6E52;
+    --danger:#9A3324;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family: Georgia, "Noto Serif Sinhala", "Iskoola Pota", serif;
+    line-height:1.5;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:30px 16px;
+  }
+  .ui{font-family: -apple-system,"Segoe UI","Noto Sans Sinhala","Iskoola Pota",sans-serif;}
+
+  .card{
+    width:100%;
+    max-width:380px;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-left:4px solid var(--maroon);
+    border-radius:6px;
+    padding:26px 26px 22px;
+  }
+  .card h1{
+    font-size:20px;
+    margin:0 0 4px;
+  }
+  .card .sub{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:0 0 20px;
+  }
+
+  .field{ margin-bottom:14px; }
+  .field label{
+    display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:5px;
+  }
+  .field input{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-size:14.5px;
+    color:var(--ink);
+    border-radius:4px;
+    font-family:inherit;
+  }
+  .field input:focus{
+    outline:2px solid var(--brass); outline-offset:0; border-color:var(--brass);
+  }
+  .hint{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:4px;
+  }
+
+  button.btn{
+    width:100%;
+    font-size:14px;
+    padding:10px 16px;
+    border-radius:5px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper-raised);
+    cursor:pointer;
+    margin-top:6px;
+  }
+  button.btn:hover{ background:#3a3527; }
+  button.btn:disabled{ opacity:0.55; cursor:default; }
+
+  .banner{
+    font-size:13px; padding:10px 14px; border-radius:5px; margin-bottom:14px;
+  }
+  .banner.error{ background:#F6E1DB; border:1px solid var(--danger); color:var(--maroon-dark); }
+  .banner.ok{ background:#E8EDE4; border:1px solid var(--sage); color:#37452f; }
+
+  details.settings{
+    margin-top:18px; font-size:12px;
+  }
+  details.settings summary{ cursor:pointer; color:var(--ink-soft); }
+  details.settings .box{
+    margin-top:8px; padding:10px 12px; background:#fff;
+    border:1px solid var(--line); border-radius:6px;
+  }
+  details.settings input{
+    width:100%; margin-top:4px; padding:6px 8px; font-size:12.5px;
+    border:1px solid var(--line); border-radius:4px; font-family:inherit;
+  }
+  details.settings code{
+    display:block; background:var(--paper); border:1px solid var(--line); padding:8px;
+    border-radius:4px; font-size:11px; white-space:pre-wrap; margin-top:6px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>නව Author ලියාපදිංචිය</h1>
+    <p class="sub ui">වචන කෝෂය සඳහා ඔබේම username සහ password එකක් සකසන්න.</p>
+
+    <div id="banner"></div>
+
+    <form id="regForm">
+      <div class="field">
+        <label class="ui" for="username">Author නම (username)</label>
+        <input class="ui" type="text" id="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label class="ui" for="password">මුරපදය (password)</label>
+        <input class="ui" type="password" id="password" autocomplete="new-password" required>
+      </div>
+      <div class="field">
+        <label class="ui" for="confirm">මුරපදය තහවුරු කරන්න</label>
+        <input class="ui" type="password" id="confirm" autocomplete="new-password" required>
+        <div class="hint ui">අවම වශයෙන් අකුරු 4 ක්වත් යොදන්න.</div>
+      </div>
+      <button class="btn ui" id="submitBtn" type="submit">ලියාපදිංචි වන්න</button>
+    </form>
+
+    <details class="settings">
+      <summary class="ui">සැකසුම් (Supabase වගු නාමය)</summary>
+      <div class="box">
+        <label class="ui" for="tableName">Authors වගු නාමය</label>
+        <input class="ui" type="text" id="tableName" value="authors">
+        <code id="sqlHint"></code>
+      </div>
+    </details>
+  </div>
+
+<script>
+(function(){
+  // Same Supabase project used by the word-dictionary app.
+  const SUPABASE_URL = "https://uqgzlaxsnknheoerbfus.supabase.co";
+  const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxZ3psYXhzbmtuaGVvZXJiZnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5MjM2MTUsImV4cCI6MjA3OTI4MzYxNX0.IYWZ7ukx8J-GJMWy7cMk2BWnmzJmJjjE93yEmJie7nQ";
+  const REST_BASE = SUPABASE_URL + "/rest/v1/";
+
+  const $ = (id) => document.getElementById(id);
+  let TABLE = "authors";
+
+  function headers(extra){
+    return Object.assign({
+      "apikey": ANON_KEY,
+      "Authorization": "Bearer " + ANON_KEY,
+      "Content-Type": "application/json"
+    }, extra || {});
+  }
+
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  function showBanner(message, type){
+    const el = $("banner");
+    if(!message){ el.innerHTML = ""; return; }
+    el.innerHTML = '<div class="banner ' + (type||"error") + ' ui">' + escapeHtml(message) + '</div>';
+  }
+
+  function updateSqlHint(){
+    $("sqlHint").textContent =
+      'CREATE TABLE IF NOT EXISTS ' + TABLE + ' (\n' +
+      '  id bigint generated always as identity primary key,\n' +
+      '  username text unique not null,\n' +
+      '  password text not null,\n' +
+      '  created_at timestamptz default now()\n' +
+      ');';
+  }
+
+  $("tableName").addEventListener("input", () => {
+    TABLE = $("tableName").value.trim() || "authors";
+    updateSqlHint();
+  });
+  updateSqlHint();
+
+  async function usernameExists(username){
+    const res = await fetch(
+      REST_BASE + TABLE + "?select=username&username=eq." + encodeURIComponent(username) + "&limit=1",
+      { headers: headers() }
+    );
+    if(!res.ok){
+      const body = await res.text();
+      throw new Error(body || res.statusText);
+    }
+    const rows = await res.json();
+    return rows.length > 0;
+  }
+
+  async function createAuthor(username, password){
+    const res = await fetch(REST_BASE + TABLE, {
+      method: "POST",
+      headers: headers({ "Prefer": "return=representation" }),
+      body: JSON.stringify({ username, password })
+    });
+    const text = await res.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch(e){ /* not json */ }
+    if(!res.ok){
+      const msg = (json && (json.message || json.hint)) || text || res.statusText;
+      throw new Error(msg);
+    }
+    return json;
+  }
+
+  $("regForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    showBanner("", null);
+
+    const username = $("username").value.trim();
+    const password = $("password").value;
+    const confirm = $("confirm").value;
+
+    if(!username || !password){
+      showBanner("Username සහ password දෙකම අවශ්‍යයි.", "error");
+      return;
+    }
+    if(password.length < 4){
+      showBanner("මුරපදය අකුරු 4කට වඩා දිග විය යුතුයි.", "error");
+      return;
+    }
+    if(password !== confirm){
+      showBanner("මුරපද දෙක නොගැලපේ.", "error");
+      return;
+    }
+
+    const btn = $("submitBtn");
+    btn.disabled = true;
+    try{
+      const exists = await usernameExists(username);
+      if(exists){
+        showBanner('"' + username + '" යන නම දැනටමත් භාවිතයේ ඇත. වෙනත් නමක් උත්සාහ කරන්න.', "error");
+        return;
+      }
+      await createAuthor(username, password);
+      showBanner('ලියාපදිංචිය සාර්ථකයි! දැන් ඔබට "' + username + '" ලෙස පරිපාලන පිටුවෙන් පිවිසිය හැක.', "ok");
+      $("regForm").reset();
+    }catch(e){
+      showBanner("ලියාපදිංචි කිරීමට නොහැකි විය: " + e.message, "error");
+    }finally{
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
