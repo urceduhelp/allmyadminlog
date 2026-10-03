@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AL History Guess Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sl:#1a3bb5;--ind:#1a7a3c;--eu:#c0111f;
+  --bg:#f5f4f0;--card:#ffffff;--border:#e2e0d8;
+  --text:#1a1917;--muted:#7a7870;
+  --red:#e24b4a;--orange:#ef9f27;--green:#3a8a2e;
+  --accent:var(--sl);--radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100vh;background:var(--bg);font-family:'Noto Sans Sinhala',sans-serif;color:var(--text)}
+.app{max-width:480px;margin:0 auto;padding:16px 12px 48px}
+
+.header{text-align:center;margin-bottom:20px;padding-top:8px}
+.header h1{font-size:15px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-family:'DM Mono',monospace}
+.header p{font-size:11px;color:var(--muted);margin-top:3px;opacity:.7;font-family:'DM Mono',monospace}
+
+.tab-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px}
+.tab{padding:11px 4px;border-radius:50px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .18s;font-family:'DM Mono',monospace}
+.tab.sl{background:color-mix(in srgb,var(--sl) 18%,white);color:var(--sl)}
+.tab.ind{background:color-mix(in srgb,var(--ind) 18%,white);color:var(--ind)}
+.tab.eu{background:color-mix(in srgb,var(--eu) 18%,white);color:var(--eu)}
+.tab.active.sl{background:var(--sl);color:white;box-shadow:0 4px 14px rgba(26,59,181,.3)}
+.tab.active.ind{background:var(--ind);color:white;box-shadow:0 4px 14px rgba(26,122,60,.3)}
+.tab.active.eu{background:var(--eu);color:white;box-shadow:0 4px 14px rgba(192,17,31,.3)}
+
+.add-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-bottom:16px}
+.add-card label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:8px;font-family:'DM Mono',monospace}
+.add-card input[type=text]{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:'Noto Sans Sinhala',sans-serif;color:var(--text);background:var(--bg);outline:none;transition:border .15s;margin-bottom:10px}
+.add-card input[type=text]:focus{border-color:var(--accent);background:white}
+.add-row2{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center}
+.add-card select{padding:10px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Noto Sans Sinhala',sans-serif;color:var(--text);background:var(--bg);outline:none;cursor:pointer;width:100%}
+.add-card select:focus{border-color:var(--accent)}
+.add-btn{padding:10px 20px;border-radius:8px;border:none;color:white;font-size:22px;line-height:1;cursor:pointer;background:var(--accent);transition:transform .1s,opacity .1s}
+.add-btn:active{transform:scale(.93);opacity:.85}
+
+.legend{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.dot.red{background:var(--red)}.dot.orange{background:var(--orange)}.dot.green{background:var(--green)}.dot.gray{background:#bbb}
+
+.table-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.table-head{display:grid;grid-template-columns:1fr 52px 52px 28px 32px;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border)}
+.table-head span{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-family:'DM Mono',monospace}
+.table-head span.c{text-align:center}
+.table-row{display:grid;grid-template-columns:1fr 52px 52px 28px 32px;padding:10px 12px;border-bottom:1px solid var(--border);align-items:center;transition:background .12s}
+.table-row:last-child{border-bottom:none}
+.table-row:hover{background:var(--bg)}
+.row-name{font-size:13px;line-height:1.4;cursor:pointer}
+.row-name:hover .name-text{text-decoration:underline;text-underline-offset:2px}
+.row-id{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;display:block;margin-bottom:1px}
+.row-yr{text-align:center;font-size:12px;font-family:'DM Mono',monospace;font-weight:500;color:var(--muted)}
+.row-yr.has{color:var(--text)}
+.row-dot{display:flex;justify-content:center}
+.row-dot span{width:14px;height:14px;border-radius:3px;display:block}
+.row-dot span.red{background:var(--red)}.row-dot span.orange{background:var(--orange)}.row-dot span.green{background:var(--green)}.row-dot span.gray{background:#bbb}
+.del-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;padding:4px;border-radius:4px;transition:color .12s}
+.del-btn:hover,.del-btn:active{color:var(--red)}
+.empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:13px}
+
+.save-btn{width:100%;margin-top:16px;padding:13px;border-radius:50px;border:1.5px solid var(--border);background:white;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Mono',monospace;transition:all .15s}
+.save-btn:hover{background:var(--accent);color:white;border-color:var(--accent)}
+.save-btn:active{transform:scale(.97)}
+
+/* ── Popup ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.open{opacity:1;pointer-events:all}
+.popup{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 20px 40px;transform:translateY(40px);transition:transform .25s cubic-bezier(.34,1.1,.64,1);position:relative;overflow:hidden}
+.overlay.open .popup{transform:translateY(0)}
+.popup-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px}
+.popup-id{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px}
+.popup-title{font-size:16px;font-weight:700;margin-bottom:18px;line-height:1.4}
+.popup-section{margin-bottom:16px}
+.popup-section h3{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-family:'DM Mono',monospace;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sec-badge{display:inline-block;padding:2px 8px;border-radius:50px;font-size:10px;font-weight:700;letter-spacing:.04em}
+.sec-badge.b16{background:#e8edff;color:var(--sl)}
+.sec-badge.b8{background:#fff4e0;color:#b06000}
+.year-chips{display:flex;flex-wrap:wrap;gap:8px}
+
+/* Year chips — now clickable to show questions */
+.chip{padding:7px 16px;border-radius:50px;font-size:14px;font-family:'DM Mono',monospace;font-weight:500;cursor:default;position:relative;transition:transform .12s,box-shadow .12s;user-select:none}
+.chip.y16{background:#e8edff;color:var(--sl)}
+.chip.y8{background:#fff4e0;color:#b06000}
+.chip.none{background:var(--bg);color:var(--muted);font-size:12px;padding:6px 14px;cursor:default}
+.chip.has-q{cursor:pointer}
+.chip.has-q:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.chip.has-q:active{transform:scale(.95)}
+.chip.has-q::after{content:'?';position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:var(--accent);color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;line-height:14px;text-align:center}
+.chip.y8.has-q::after{background:#b06000}
+
+.popup-close{width:100%;margin-top:20px;padding:13px;border-radius:50px;border:1.5px solid var(--border);background:transparent;font-size:14px;cursor:pointer;font-family:'DM Mono',monospace;color:var(--text);transition:background .15s}
+.popup-close:hover{background:var(--bg)}
+
+/* ── Question Panel (slides in over popup) ── */
+.q-panel{position:absolute;inset:0;background:var(--card);border-radius:20px 20px 0 0;padding:20px 20px 36px;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow-y:auto}
+.q-panel.open{transform:translateX(0)}
+.q-panel-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.q-back{background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);padding:4px;border-radius:6px;transition:color .12s;line-height:1}
+.q-back:hover{color:var(--text)}
+.q-meta{flex:1}
+.q-meta-id{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.q-meta-title{font-size:14px;font-weight:700;line-height:1.3}
+.q-year-badge{padding:4px 12px;border-radius:50px;font-size:13px;font-family:'DM Mono',monospace;font-weight:600;flex-shrink:0}
+.q-year-badge.t16{background:#e8edff;color:var(--sl)}
+.q-year-badge.t8{background:#fff4e0;color:#b06000}
+
+.q-body{flex:1}
+.q-item{background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--border);position:relative}
+.q-item-num{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.q-item-text{font-size:14px;line-height:1.6;color:var(--text)}
+.q-item-edit{position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;font-size:12px;color:#ccc;padding:4px;border-radius:4px;transition:color .12s}
+.q-item-edit:hover{color:var(--accent)}
+.q-item-del{position:absolute;top:8px;right:30px;background:none;border:none;cursor:pointer;font-size:12px;color:#ccc;padding:4px;border-radius:4px;transition:color .12s}
+.q-item-del:hover{color:var(--red)}
+.q-empty{text-align:center;padding:28px 16px;color:var(--muted);font-size:13px;background:var(--bg);border-radius:10px;border:1px dashed var(--border)}
+
+/* Inline edit textarea */
+.q-item-edit-area{width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--accent);border-radius:6px;font-size:14px;font-family:'Noto Sans Sinhala',sans-serif;color:var(--text);background:white;resize:vertical;min-height:70px;outline:none}
+.q-edit-btns{display:flex;gap:6px;margin-top:6px}
+.q-edit-save{padding:6px 14px;border-radius:6px;border:none;background:var(--accent);color:white;font-size:12px;cursor:pointer;font-family:'DM Mono',monospace}
+.q-edit-cancel{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Mono',monospace}
+
+/* Add question area */
+.q-add-area{margin-top:12px;background:var(--bg);border-radius:10px;padding:12px;border:1px dashed var(--border)}
+.q-add-area label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-family:'DM Mono',monospace;display:block;margin-bottom:6px}
+.q-add-area textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:'Noto Sans Sinhala',sans-serif;color:var(--text);background:white;resize:vertical;min-height:70px;outline:none;transition:border .15s}
+.q-add-area textarea:focus{border-color:var(--accent);background:white}
+.q-add-submit{width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Mono',monospace;transition:opacity .15s}
+.q-add-submit:active{opacity:.8}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(8px);background:#1a1917;color:white;padding:10px 20px;border-radius:50px;font-size:13px;font-family:'DM Mono',monospace;opacity:0;pointer-events:none;transition:all .25s;white-space:nowrap;z-index:200}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+body.tab-ind{--accent:var(--ind)}
+body.tab-eu{--accent:var(--eu)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>AL Guess Tracker</h1>
+    <p>උසස් පෙළ ඉතිහාස මාතෘකා · ලකුණු ඇස්තමේන්තු</p>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab sl active" onclick="setTab('SL')">Sri Lanka</button>
+    <button class="tab ind" onclick="setTab('IND')">India</button>
+    <button class="tab eu" onclick="setTab('EU')">Europe</button>
+  </div>
+
+  <div class="add-card">
+    <label>නව මාතෘකාව / වර්ෂය එකතු කරන්න</label>
+    <input type="text" id="newName" placeholder="මාතෘකාවේ නම..."/>
+    <div class="add-row2">
+      <select id="newYear"><option value="">— වර්ෂය —</option></select>
+      <select id="newType">
+        <option value="16">ලකුණු 16</option>
+        <option value="8">ලකුණු 8</option>
+      </select>
+      <button class="add-btn" onclick="addTopic()">+</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="leg-item"><span class="dot red"></span>3+ වසර</div>
+    <div class="leg-item"><span class="dot orange"></span>2 වසර</div>
+    <div class="leg-item"><span class="dot green"></span>1 වසර</div>
+    <div class="leg-item"><span class="dot gray"></span>නොදනී</div>
+    <div class="leg-item" style="margin-left:auto;font-size:10px;opacity:.7">? = ප්‍රශ්නය ඇත</div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-head">
+      <span>මාතෘකාව</span>
+      <span class="c">16</span>
+      <span class="c">8</span>
+      <span></span><span></span>
+    </div>
+    <div id="listBody"></div>
+  </div>
+
+  <button class="save-btn" onclick="saveManual()">💾 Device එකේ Save කරන්න</button>
+</div>
+
+<!-- Main Popup -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="popup" id="popup">
+    <div class="popup-handle"></div>
+    <div class="popup-id" id="popId"></div>
+    <div class="popup-title" id="popTitle"></div>
+    <div class="popup-section">
+      <h3><span class="sec-badge b16">16</span> ලකුණු ප්‍රශ්නය ලැබුණු වර්ෂ <span style="font-size:9px;color:var(--muted);font-weight:400">(?ඇති chips click කරන්න)</span></h3>
+      <div class="year-chips" id="pop16"></div>
+    </div>
+    <div class="popup-section">
+      <h3><span class="sec-badge b8">8</span> ලකුණු ප්‍රශ්නය ලැබුණු වර්ෂ</h3>
+      <div class="year-chips" id="pop8"></div>
+    </div>
+    <button class="popup-close" onclick="closePopup()">වසන්න ✕</button>
+
+    <!-- Question Panel (slides in) -->
+    <div class="q-panel" id="qPanel">
+      <div class="q-panel-header">
+        <button class="q-back" onclick="closeQPanel()">←</button>
+        <div class="q-meta">
+          <div class="q-meta-id" id="qPanelId"></div>
+          <div class="q-meta-title" id="qPanelTitle"></div>
+        </div>
+        <span class="q-year-badge" id="qPanelBadge"></span>
+      </div>
+      <div class="q-body" id="qPanelBody"></div>
+      <div class="q-add-area">
+        <label>නව ප්‍රශ්නයක් එකතු කරන්න</label>
+        <textarea id="qAddText" placeholder="ප්‍රශ්නය ඇතුළත් කරන්න..."></textarea>
+        <button class="q-add-submit" onclick="submitNewQuestion()">+ ප්‍රශ්නය එකතු කරන්න</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const YEARS=[];for(let y=2025;y>=2000;y--)YEARS.push(y);
+
+const SAMPLE={
+  SL:[
+{id:'SLR1', name:'භූගෝලීය සාධක සම්බන්ධයෙන්',y16:[2005,2008,2014,2016,2019,2021,2023,2025 ],y8:[2004]},				
+{id:'SLR2',name:'මූලාශ්‍රය සම්බන්ධයෙන්',y16:[2004,2006,2009,2010,2011,2013,2015,2017,2018, 2020,2022,2024],y8:[2025]},
+{id:'SLR3',name:'ආර්ය සංක්‍රමණ හා ජනපද සම්බන්ධයෙන්',y16:[2007],y8:[0000]},
+{id:'SLR4',name:'පණ්ඩුකාභය රාජ්‍ය සමය සම්බන්ධයෙන්',y16:[2008],y8:[2006]},
+{id:'SLR5',name:'දෙවනපෑතිස් රජු සම්බන්ධයෙන්',y16:[2007,2011,2013,2016,2022,2024],y8:[0000]},
+{id:'SLR6',name:'මහින්දාගමනය සම්බන්ධයෙන්',y16:[2009,2019],y8:[2023]},
+{id:'SLR7',name:'කාවන්තිස්ස රජු සම්බන්ධයෙන්',y16:[2014,2018,2021],y8:[0000]},
+{id:'SLR8',name:'දුටුගැමුණු රජු සම්බන්ධයෙන්',y16:[2004,2008,2012],y8:[0000]},
+{id:'SLR9',name:'වළගම්බා රජු සම්බන්ධයෙන්',y16:[2004, 2006,2015,2025],y8:[0000]},
+{id:'SLR10',name:'වසභ රජු සම්බන්ධයෙන්',y16:[0000],y8:[2011,2021,2024]},
+{id:'SLR11',name:'මහසෙන් රජු සම්බන්ධයෙන්',y16:[2010,2013],y8:[2022]},
+{id:'SLR12',name:'ධාතුසේන රජු සම්බන්ධයෙන්',y16:[0000],y8:[0000]},
+{id:'SLR13',name:'සීගිරිය හෝ කාශ්‍යප රජු සම්බන්ධයෙන්',y16:[0000],y8:[2018,2022]},
+{id:'SLR14',name:'අනුරාධපුර පරිහානිය සම්බන්ධයෙන්',y16:[2006,2015],y8:[0000]},
+{id:'SLR15',name:'රජරට චෝළ ආධිපත්‍යය සම්බන්ධයෙන්.',y16:[0000],y8:[2020]},
+{id:'SLR16',name:'මහා විජයබාහු රජු සම්බන්ධයෙන්',y16:[2005,2008,2010,2011,2014,2017,2019,2023],y8:[2021]},
+{id:'SLR17',name:'මහා පරාක්‍රමබාහු රජු සම්බන්ධයෙන්',y16:[2006,2009,2012,2015,2017,2018,2020,2024],y8:[0000]},
+{id:'SLR18',name:'නිශ්ශංකමල්ල රජු සම්බන්ධයෙන්',y16:[2007,2016,],y8:[2004,2018]},
+{id:'SLR19',name:'වැව් හා වාරිමාර්ග ඇසුරෙන්',y16:[2005,2008,2012,2014,2016,2018,2020,2023],y8:[2004,2011,2019,2025]},
+{id:'SLR20',name:'රජරට සමයේ විදේශ ආක්‍රමණ සම්බන්ධයෙන්',y16:[2007],y8:[2006,2017]},
+{id:'SLR21',name:'රජරට සමයේ විදේශ සම්බන්ධතා සම්බන්ධයෙන්',y16:[2013],y8:[0000]},
+{id:'SLR22',name:'පොළොන්නරු යුගයේ ආර්ථිකය',y16:[2016],y8:[0000]},
+{id:'SLR23',name:'පොළොන්නරු පරිහානිය සම්බන්ධයන්',y16:[0000],y8:[2023,]},
+{id:'SLR24',name:'රජරට පරිහානිය සම්බන්ධයන්',y16:[2010,2021],y8:[2019]},
+{id:'SLR25',name:'දඹදෙණි යුගය සම්බන්ධයෙන්',y16:[2018],y8:[2005,2007,2009,2014,2016,2021]},
+{id:'SLR26',name:'තෙවන විජයබාහු රජු සම්බන්ධයෙන්',y16:[0000],y8:[0000]},
+{id:'SLR27',name:'දෙවන පරාක්‍රමබාහු රජු සම්බන්ධයෙන්',y16:[2012,2015,2025],y8:[2004,2011,2020]},
+{id:'SLR28',name:'යාපහුව යුගය සම්බන්ධයෙන්',y16:[0000],y8:[2007]},
+{id:'SLR29',name:'කුරුණෑගල යුගය සම්බන්ධයෙන්',y16:[0000],y8:[2008,2013,2024]},
+{id:'SLR30',name:'ගම්පොළ යුගය සම්බන්ධයෙන්',y16:[2017],y8:[2006,2023]},
+{id:'SLR31',name:'කෝට්ටේ යුගය සම්බන්ධයෙන්',y16:[2004,2009,2017,],y8:[2005,2006,2008,2011,2012,2013,2014,2015,2016,2019,2020,2022]},
+{id:'SLR32',name:'හයවන පරාක්‍රමබාහු රජු සම්බන්ධයෙන්',y16:[2004,2009,2017],y8:[2012,2014,2016,2023]},
+{id:'SLR33',name:'කලාකටයුතු සම්බන්ධයෙන්',y16:[0000],y8:[2004,2010]},
+{id:'SLR34',name:'යාපන රාජධානිය සම්බන්ධයෙන්',y16:[2010],y8:[2005,2008,2009,2011,2013,2014,2015,2016,2018,2019,2021,2022,2025]},
+{id:'SLR35',name:'සීතාවක රාජ්‍යය සම්බන්ධයෙන්',y16:[2004,2008,2011,2016],y8:[2017]},
+{id:'SLR36',name:'බ්‍රිතාන්‍ය පාලන සමය සම්බන්ධයෙන්',y16:[2005],y8:[2024]},
+{id:'SLR37',name:'බ්‍රිතාන්‍ය පාලන සමයේ සිංහලේ විමුක්ති අරගල සම්බන්ධයෙන්',y16:[2005,2010,2013,2015,2016,2023],y8:[2004,2007,2018,2019,2021,2022]},
+{id:'SLR38',name:'යටත්විජිත යුගයට පෙර ආර්ථිකය සම්බන්ධයෙන්',y16:[2004],y8:[2017]},
+{id:'SLR39',name:'පෘතුගීසි හා ලන්දේසි යුග සම්බන්ධයෙන්',y16:[2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2018,2020,2021,2023,2026,2025],y8:[2004,2006,2010,2012,2015,2017,2019,2022,2025]},
+{id:'SLR40',name:'මහනුවර රාජධානිය සම්බන්ධයෙන්',y16:[2004,2006,2008,2009,2011,2014,2017,2019,2021,2022,2024,2025],y8:[2006,2010,2012,2013,2015,2023]},
+{id:'SLR41',name:'බ්‍රිතාන්‍ය සමයේ ආණ්ඩුක්‍රම ප්‍රතිසංස්කරණ සම්බන්ධයෙන්',y16:[2004,2005,2006,2007,2009,2012,2013,2014,2015,2016,2017,2018,2021,2022,2016],y8:[2009,2010,2015,2019]},
+{id:'SLR42',name:'ආගමික හා සංස්කෘතික පුනරුදය සම්බන්ධයෙන්',y16:[2009,2015,2017,2022],y8:[2006,2012,2014,2019,2020,2025]},
+{id:'SLR43',name:'ගොවි ජනපද සම්බන්ධයෙන්',y16:[0000],y8:[2018]},
+{id:'SLR44',name:'යටත්විජිතයුගයට පසු 1978 දක්වා ආර්ථිකය සම්බන්ධයෙන්',y16:[2019],y8:[2016,2018]},
+{id:'SLR45',name:'නිදහසින් පසු මැතිවරණ හා දේශපාලන කටයුතු සම්බන්ධයෙන්',y16:[2011,2012,2014],y8:[2014,2018,2020,2021]},
+{id:'SLR46',name:'වතු ආර්ථිකය සම්බන්ධයෙන්',y16:[2004,2007,2008,2011,2014,2018,2024],y8:[2017,2021]},
+{id:'SLR47',name:'ලංකා ජාතික සංගමය සම්බන්ධයෙන්',y16:[0000],y8:[2006,2014,2017]},
+{id:'SLR48',name:'පුද්ගල චරිත',y16:[2012],y8:[2007,2012,2013,2016,2020,2021,2022,2023,2024,2025]},
+{id:'SLR49',name:'ජනරජ ව්‍යවස්ථා සම්බන්ධයෙන්',y16:[2011,2013,2016,2017,2018,2025],y8:[2015,2023]},
+{id:'SLR50',name:'1915 සිංහල මුස්ලිම් කෝලහලය',y16:[0000],y8:[2007]},
+{id:'SLR51',name:'මාගම රාජධානිය',y16:[0000],y8:[2025]},
+  ],
+  IND:[
+    {id:'IND1',name:'මගධ අධිරාජ්‍යය',y16:[2021],y8:[2020]},
+    {id:'IND2',name:'අශෝක රජු',y16:[2023],y8:[2022]},
+    {id:'IND3',name:'මෞර්ය රාජවංශය',y16:[2018],y8:[2019]},
+    {id:'IND4',name:'ගුප්ත යුගය',y16:[2022],y8:[2021]},
+    {id:'IND5',name:'ඉස්ලාමිය ආධිපත්‍යය',y16:[2015],y8:[2016]},
+    {id:'IND6',name:'මුගල් අධිරාජ්‍යය',y16:[2020],y8:[2019]},
+    {id:'IND7',name:'බ්‍රිතාන්‍ය ආධිපත්‍යය',y16:[2014],y8:[2015]},
+    {id:'IND8',name:'ගාන්ධිගේ ව්‍යාපාරය',y16:[2017],y8:[2018]},
+    {id:'IND9',name:'ඉන්දීය නිදහස',y16:[2016],y8:[2017]},
+    {id:'IND10',name:'හරප්පා ශිෂ්ටාචාරය',y16:[2013],y8:[2014]},
+  ],
+  EU:[
+    {id:'ERP1',name:'රෝම ජනරජය',y16:[2020],y8:[2021]},
+    {id:'ERP2',name:'ෆ්‍රෙන්ච් විප්ලවය',y16:[2023],y8:[2022]},
+    {id:'ERP3',name:'නැපෝලියන් යුගය',y16:[2021],y8:[2020]},
+    {id:'ERP4',name:'පළමු ලෝක යුද්ධය',y16:[2017],y8:[2018]},
+    {id:'ERP5',name:'දෙවන ලෝක යුද්ධය',y16:[2022],y8:[2023]},
+    {id:'ERP6',name:'කාර්මික විප්ලවය',y16:[2015],y8:[2016]},
+    {id:'ERP7',name:'ශීතල යුද්ධය',y16:[2019],y8:[2020]},
+    {id:'ERP8',name:'මැදකාලීන යුරෝපය',y16:[2014],y8:[2015]},
+    {id:'ERP9',name:'රෙනේසාන්ස්',y16:[2013],y8:[2014]},
+    {id:'ERP10',name:'බිස්මාර්ක් යුගය',y16:[2016],y8:[2017]},
+  ]
+};
+
+/* ─── Sample Questions (pre-seeded for demo) ─── */
+const SAMPLE_QUESTIONS = {
+  'SLR8_16_2004': ['දුටුගැමුණු රජු ඇසළ මැදුරු ගල් ඔරලොස්සාව ගෙන ආ ස්ථානය කුමක්ද?','දුටුගැමුණු රජු රජ සිංහාසනය ලබා ගත් ආකාරය සඳහන් කරන්න.'],
+  'SLR8_16_2008': ['දුටුගැමුණු රජු ශ්‍රී ලංකාවේ ජාතික හා ආගමික ඒකාබද්ධකරණය සඳහා ගත් ක්‍රියාමාර්ග විග්‍රහ කරන්න.'],
+  'SLR8_16_2012': ['දුටුගැමුණු රජු යෝජනා කළ ගොඩනැඟිලි ව්‍යාපෘති ගැන සාකච්ඡා කරන්න.'],
+};
+
+const PREFIX={SL:'SLR',IND:'IND',EU:'ERP'};
+let currentTab='SL';
+let data={};
+let questions={};
+let currentQKey=null; // active question panel key: topicId_type_year
+
+/* ─── Persistence ─── */
+function loadData(){
+  try{
+    const s=localStorage.getItem('al_history_v3');
+    data=s?JSON.parse(s):JSON.parse(JSON.stringify(SAMPLE));
+  }catch(e){data=JSON.parse(JSON.stringify(SAMPLE));}
+  try{
+    const q=localStorage.getItem('al_questions_v1');
+    questions=q?JSON.parse(q):JSON.parse(JSON.stringify(SAMPLE_QUESTIONS));
+  }catch(e){questions=JSON.parse(JSON.stringify(SAMPLE_QUESTIONS));}
+}
+function persist(){
+  try{localStorage.setItem('al_history_v3',JSON.stringify(data));}catch(e){}
+  try{localStorage.setItem('al_questions_v1',JSON.stringify(questions));}catch(e){}
+}
+function saveManual(){persist();showToast('✓ දත්ත සාර්ථකව Save කෙරිණි');}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+/* Question key: topicId + "_" + type("16"/"8") + "_" + year */
+function qKey(topicId,type,year){return `${topicId}_${type}_${year}`;}
+function getQs(key){return questions[key]||[];}
+
+/* ─── Tabs ─── */
+function setTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab')[{SL:0,IND:1,EU:2}[tab]].classList.add('active');
+  document.body.className=tab==='SL'?'':'tab-'+tab.toLowerCase();
+  render();
+}
+function populateYears(){
+  const sel=document.getElementById('newYear');
+  YEARS.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);});
+}
+function latestY16(t){const a=(t.y16||[]).filter(v=>v>0);return a.length?Math.max(...a):null;}
+function getColor(t){
+  const y=latestY16(t);if(!y)return 'gray';
+  const d=new Date().getFullYear()-y;
+  return d>=3?'red':d===2?'orange':'green';
+}
+function latestDisplay(arr){if(!arr||!arr.length)return null;const v=arr.filter(x=>x>0);return v.length?Math.max(...v):null;}
+
+/* ─── Main List Render ─── */
+function render(){
+  const list=[...(data[currentTab]||[])].sort((a,b)=>(latestY16(a)||9999)-(latestY16(b)||9999));
+  const body=document.getElementById('listBody');
+  if(!list.length){body.innerHTML='<div class="empty">මාතෘකා නොමැත</div>';return;}
+  body.innerHTML=list.map(t=>{
+    const color=getColor(t);
+    const d16=latestDisplay(t.y16);
+    const d8=latestDisplay(t.y8);
+    const cnt16=t.y16&&t.y16.filter(v=>v>0).length>1?`<span style="font-size:9px;color:var(--muted)">×${t.y16.filter(v=>v>0).length}</span>`:'';
+    const cnt8=t.y8&&t.y8.filter(v=>v>0).length>1?`<span style="font-size:9px;color:var(--muted)">×${t.y8.filter(v=>v>0).length}</span>`:'';
+    return `<div class="table-row">
+      <div class="row-name" onclick="openPopup('${t.id}')">
+        <span class="row-id">${t.id}</span>
+        <span class="name-text">${t.name}</span>
+      </div>
+      <div class="row-yr ${d16?'has':''}">${d16||'–'} ${cnt16}</div>
+      <div class="row-yr ${d8?'has':''}">${d8||'–'} ${cnt8}</div>
+      <div class="row-dot"><span class="${color}"></span></div>
+      <div><button class="del-btn" onclick="deleteTopic('${t.id}')">✕</button></div>
+    </div>`;
+  }).join('');
+}
+
+/* ─── Popup ─── */
+let currentPopupTopicId=null;
+function openPopup(id){
+  const t=(data[currentTab]||[]).find(x=>x.id===id);
+  if(!t)return;
+  currentPopupTopicId=id;
+  document.getElementById('popId').textContent=t.id;
+  document.getElementById('popTitle').textContent=t.name;
+
+  const y16s=(t.y16||[]).filter(v=>v>0).slice().sort((a,b)=>a-b);
+  const y8s=(t.y8||[]).filter(v=>v>0).slice().sort((a,b)=>a-b);
+
+  document.getElementById('pop16').innerHTML=y16s.length
+    ?y16s.map(y=>{
+        const k=qKey(id,'16',y);
+        const hasQ=getQs(k).length>0;
+        return `<span class="chip y16${hasQ?' has-q':''}" onclick="openQPanel('${id}','16',${y})">${y}</span>`;
+      }).join('')
+    :'<span class="chip none">ලැබී නැත</span>';
+
+  document.getElementById('pop8').innerHTML=y8s.length
+    ?y8s.map(y=>{
+        const k=qKey(id,'8',y);
+        const hasQ=getQs(k).length>0;
+        return `<span class="chip y8${hasQ?' has-q':''}" onclick="openQPanel('${id}','8',${y})">${y}</span>`;
+      }).join('')
+    :'<span class="chip none">ලැබී නැත</span>';
+
+  closeQPanel(true);
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function overlayClick(e){if(e.target===document.getElementById('overlay'))closePopup();}
+function closePopup(){
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow='';
+  setTimeout(()=>closeQPanel(true),300);
+}
+
+/* ─── Question Panel ─── */
+function openQPanel(topicId,type,year){
+  const t=(data[currentTab]||[]).find(x=>x.id===topicId);
+  if(!t)return;
+  const k=qKey(topicId,type,year);
+  currentQKey=k;
+
+  document.getElementById('qPanelId').textContent=t.id+' · '+year+' · '+type+' ලකුණු';
+  document.getElementById('qPanelTitle').textContent=t.name;
+  const badge=document.getElementById('qPanelBadge');
+  badge.textContent=year;
+  badge.className='q-year-badge '+(type==='16'?'t16':'t8');
+
+  document.getElementById('qAddText').value='';
+  renderQPanelBody(k);
+  document.getElementById('qPanel').classList.add('open');
+}
+
+function renderQPanelBody(k){
+  const qs=getQs(k);
+  const body=document.getElementById('qPanelBody');
+  if(!qs.length){
+    body.innerHTML='<div class="q-empty">මෙම වර්ෂය සඳහා ප්‍රශ්නයක් ඇතුළත් කර නොමැත<br><span style="font-size:11px;opacity:.6">පහතින් නව ප්‍රශ්නයක් එකතු කරන්න</span></div>';
+    return;
+  }
+  body.innerHTML=qs.map((q,i)=>`
+    <div class="q-item" id="qi_${k}_${i}">
+      <div class="q-item-num">ප්‍රශ්නය ${i+1}</div>
+      <div class="q-item-text" id="qt_${k}_${i}">${escHtml(q)}</div>
+      <button class="q-item-del" onclick="deleteQ('${k}',${i})" title="ඉවත් කරන්න">✕</button>
+      <button class="q-item-edit" onclick="startEditQ('${k}',${i})" title="සංස්කරණය">✎</button>
+    </div>
+  `).join('');
+}
+
+function closeQPanel(instant){
+  document.getElementById('qPanel').classList.remove('open');
+  currentQKey=null;
+}
+
+function submitNewQuestion(){
+  if(!currentQKey){return;}
+  const txt=document.getElementById('qAddText').value.trim();
+  if(!txt){showToast('⚠ ප්‍රශ්නය ඇතුළත් කරන්න');return;}
+  if(!questions[currentQKey])questions[currentQKey]=[];
+  questions[currentQKey].push(txt);
+  persist();
+  document.getElementById('qAddText').value='';
+  renderQPanelBody(currentQKey);
+  // refresh chips to show ? badge
+  if(currentPopupTopicId)openPopup(currentPopupTopicId);
+  // reopen panel after popup refresh
+  const parts=currentQKey.split('_');
+  // key format: topicId_type_year  (topicId may contain underscores in theory, but our ids don't)
+  // safe split: last two segments = year and type
+  const year=parseInt(parts[parts.length-1]);
+  const type=parts[parts.length-2];
+  const tId=parts.slice(0,parts.length-2).join('_');
+  openQPanel(tId,type,year);
+  showToast('✓ ප්‍රශ්නය එකතු කෙරිණි');
+}
+
+function deleteQ(k,i){
+  if(!questions[k])return;
+  questions[k].splice(i,1);
+  if(!questions[k].length)delete questions[k];
+  persist();
+  renderQPanelBody(k);
+  if(currentPopupTopicId){
+    const parts=k.split('_');
+    const year=parseInt(parts[parts.length-1]);
+    const type=parts[parts.length-2];
+    const tId=parts.slice(0,parts.length-2).join('_');
+    // just refresh chips without closing panel
+    const t=(data[currentTab]||[]).find(x=>x.id===tId);
+    if(t){
+      const y16s=(t.y16||[]).filter(v=>v>0).slice().sort((a,b)=>a-b);
+      const y8s=(t.y8||[]).filter(v=>v>0).slice().sort((a,b)=>a-b);
+      document.getElementById('pop16').innerHTML=y16s.length
+        ?y16s.map(y=>{const kk=qKey(tId,'16',y);const hasQ=getQs(kk).length>0;return `<span class="chip y16${hasQ?' has-q':''}" onclick="openQPanel('${tId}','16',${y})">${y}</span>`;}).join('')
+        :'<span class="chip none">ලැබී නැත</span>';
+      document.getElementById('pop8').innerHTML=y8s.length
+        ?y8s.map(y=>{const kk=qKey(tId,'8',y);const hasQ=getQs(kk).length>0;return `<span class="chip y8${hasQ?' has-q':''}" onclick="openQPanel('${tId}','8',${y})">${y}</span>`;}).join('')
+        :'<span class="chip none">ලැබී නැත</span>';
+    }
+  }
+  showToast('ප්‍රශ්නය ඉවත් කෙරිණි');
+}
+
+function startEditQ(k,i){
+  const qs=getQs(k);
+  const item=document.getElementById('qi_'+k+'_'+i);
+  if(!item)return;
+  const txtEl=document.getElementById('qt_'+k+'_'+i);
+  const current=qs[i];
+  const area=document.createElement('textarea');
+  area.className='q-item-edit-area';
+  area.value=current;
+  const btns=document.createElement('div');
+  btns.className='q-edit-btns';
+  btns.innerHTML=`<button class="q-edit-save" onclick="saveEditQ('${k}',${i})">✓ සාර්ථකයි</button><button class="q-edit-cancel" onclick="cancelEditQ('${k}',${i})">අවලංගු</button>`;
+  txtEl.style.display='none';
+  item.querySelector('.q-item-edit').style.display='none';
+  item.querySelector('.q-item-del').style.display='none';
+  item.appendChild(area);
+  item.appendChild(btns);
+  area.focus();
+}
+
+function saveEditQ(k,i){
+  const item=document.getElementById('qi_'+k+'_'+i);
+  if(!item)return;
+  const area=item.querySelector('.q-item-edit-area');
+  const txt=area.value.trim();
+  if(!txt){showToast('⚠ ප්‍රශ්නය හිස් නොවිය යුතු');return;}
+  if(!questions[k])questions[k]=[];
+  questions[k][i]=txt;
+  persist();
+  renderQPanelBody(k);
+  showToast('✓ ප්‍රශ්නය යාවත්කාලීන විය');
+}
+function cancelEditQ(k,i){renderQPanelBody(k);}
+
+/* ─── Topic CRUD ─── */
+function addTopic(){
+  const name=document.getElementById('newName').value.trim();
+  const yr=document.getElementById('newYear').value;
+  const type=document.getElementById('newType').value;
+  if(!name){showToast('⚠ මාතෘකාවේ නම ඇතුළත් කරන්න');return;}
+  if(!yr){showToast('⚠ වර්ෂයක් තෝරන්න');return;}
+  const list=data[currentTab]||[];
+  const year=parseInt(yr);
+  const existing=list.find(t=>t.name.trim()===name.trim());
+  if(existing){
+    if(!existing.y16)existing.y16=[];
+    if(!existing.y8)existing.y8=[];
+    const target=type==='16'?existing.y16:existing.y8;
+    if(!target.includes(year)){target.push(year);showToast('✓ '+existing.id+' — වර්ෂය '+year+' එකතු කෙරිණි');}
+    else{showToast('⚠ '+year+' දැනටමත් ඇත');return;}
+    persist();render();
+    document.getElementById('newYear').value='';
+    return;
+  }
+  const nums=list.map(t=>parseInt(t.id.replace(/\D/g,''))).filter(Boolean);
+  const next=nums.length?Math.max(...nums)+1:1;
+  const newId=PREFIX[currentTab]+next;
+  list.push({id:newId,name,y16:type==='16'?[year]:[],y8:type==='8'?[year]:[]});
+  data[currentTab]=list;
+  persist();
+  document.getElementById('newName').value='';
+  document.getElementById('newYear').value='';
+  showToast('✓ '+newId+' — '+name+' එකතු කෙරිණි');
+  render();
+}
+function deleteTopic(id){
+  data[currentTab]=(data[currentTab]||[]).filter(t=>t.id!==id);
+  persist();render();showToast('ඉවත් කෙරිණි');
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+loadData();populateYears();render();
+</script>
+</body>
+</html>
