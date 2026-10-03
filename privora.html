@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Privora</title>
+<style>
+  :root{
+    --calc-bg:#17181c;
+    --calc-panel:#1f2024;
+    --calc-display-bg:#0b0c0e;
+    --calc-display-text:#f2f1ec;
+    --calc-display-sub:#8b8d93;
+    --calc-key-num:#2c2d32;
+    --calc-key-num-text:#f2f1ec;
+    --calc-key-fn:#46474d;
+    --calc-key-fn-text:#f2f1ec;
+    --calc-key-op:#cf8a3a;
+    --calc-key-op-text:#1a1300;
+    --calc-key-op-active:#e6a458;
+
+    --vault-bg:#faf9f6;
+    --vault-surface:#ffffff;
+    --vault-border:#e4e2db;
+    --vault-ink:#1c1e22;
+    --vault-sub:#6b6e76;
+    --vault-accent:#2d5f5c;
+    --vault-accent-soft:#e4efee;
+    --vault-danger:#a33d3d;
+    --vault-danger-soft:#f7e9e9;
+
+    --serif: "Source Serif 4", Georgia, "Noto Serif Sinhala", serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Sinhala", sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --vault-bg:#14161a;
+      --vault-surface:#1b1d22;
+      --vault-border:#2b2e34;
+      --vault-ink:#f1f0ec;
+      --vault-sub:#9a9da5;
+      --vault-accent:#6fb8b2;
+      --vault-accent-soft:#1f2f2e;
+      --vault-danger:#e08a8a;
+      --vault-danger-soft:#2c1f1f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --vault-bg:#14161a;
+    --vault-surface:#1b1d22;
+    --vault-border:#2b2e34;
+    --vault-ink:#f1f0ec;
+    --vault-sub:#9a9da5;
+    --vault-accent:#6fb8b2;
+    --vault-accent-soft:#1f2f2e;
+    --vault-danger:#e08a8a;
+    --vault-danger-soft:#2c1f1f;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;overflow-x:hidden;}
+  body{
+    font-family:var(--sans);
+    background:var(--calc-bg);
+    color:var(--vault-ink);
+    overscroll-behavior:contain;
+  }
+
+  /* ---------- CALCULATOR (lock) SCREEN ---------- */
+  #calcScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px 16px;
+    background:var(--calc-bg);
+  }
+  .calc-body{
+    width:100%;
+    max-width:360px;
+    background:var(--calc-panel);
+    border-radius:28px;
+    padding:20px 16px 24px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.45);
+    overflow:hidden;
+    box-sizing:border-box;
+  }
+  .calc-brand{
+    font-family:var(--serif);
+    font-size:13px;
+    letter-spacing:0.14em;
+    color:#6d6f76;
+    padding:2px 6px 14px;
+  }
+  .calc-display{
+    background:var(--calc-display-bg);
+    border-radius:16px;
+    padding:22px 18px 16px;
+    margin-bottom:16px;
+    text-align:right;
+    min-height:96px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    gap:6px;
+  }
+  .calc-sub{
+    font-size:13px;
+    color:var(--calc-display-sub);
+    min-height:16px;
+    word-break:break-word;
+    line-height:1.3;
+  }
+  .calc-value{
+    font-size:44px;
+    color:var(--calc-display-text);
+    font-variant-numeric:tabular-nums;
+    letter-spacing:0.5px;
+    word-break:break-all;
+    line-height:1.1;
+  }
+  .calc-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:10px;
+  }
+  .calc-key{
+    border:none;
+    border-radius:50%;
+    aspect-ratio:1/1;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    font-size:20px;
+    font-family:var(--sans);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:filter .12s ease, transform .06s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .calc-key:active{transform:scale(0.94);filter:brightness(1.12);}
+  .calc-key.num{background:var(--calc-key-num);color:var(--calc-key-num-text);}
+  .calc-key.fn{background:var(--calc-key-fn);color:var(--calc-key-fn-text);font-size:18px;}
+  .calc-key.op{background:var(--calc-key-op);color:var(--calc-key-op-text);font-weight:600;}
+  .calc-key.zero{grid-column:span 2;border-radius:32px;justify-content:flex-start;padding-left:26px;}
+  .calc-cancel-link{
+    display:none;
+    text-align:center;
+    margin-top:14px;
+    font-size:13px;
+    color:#8b8d93;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+
+  /* ---------- VAULT SCREEN ---------- */
+  #vaultScreen{display:none;min-height:100vh;background:var(--vault-bg);}
+  .vault-header{
+    position:sticky;top:0;z-index:20;
+    background:var(--vault-bg);
+    border-bottom:1px solid var(--vault-border);
+    padding:14px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .vault-brand{
+    font-family:var(--serif);
+    font-size:20px;
+    letter-spacing:0.02em;
+    color:var(--vault-ink);
+  }
+  .vault-brand span{color:var(--vault-accent);}
+  .header-actions{display:flex;gap:8px;align-items:center;}
+  .icon-btn{
+    border:1px solid var(--vault-border);
+    background:var(--vault-surface);
+    color:var(--vault-ink);
+    border-radius:10px;
+    padding:8px 12px;
+    font-size:14px;
+    cursor:pointer;
+    font-family:var(--sans);
+  }
+  .icon-btn:hover{border-color:var(--vault-accent);}
+  .icon-btn.primary{background:var(--vault-accent);color:#fff;border-color:var(--vault-accent);}
+  .icon-btn.danger{color:var(--vault-danger);}
+
+  .vault-wrap{max-width:720px;margin:0 auto;padding:18px 18px 100px;}
+
+  .copy-bar{
+    position:sticky;
+    bottom:0;
+    z-index:20;
+    background:var(--vault-surface);
+    border-top:1px solid var(--vault-border);
+    padding:12px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    max-width:720px;
+    margin:0 auto;
+  }
+  .copy-bar .count{font-size:13px;color:var(--vault-sub);}
+  .copy-bar-actions{display:flex;gap:8px;}
+
+  .group{
+    background:var(--vault-surface);
+    border:1px solid var(--vault-border);
+    border-radius:14px;
+    padding:16px 16px 6px;
+    margin-bottom:16px;
+  }
+  .group h3{
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:16px;
+    margin:0 0 10px;
+    color:var(--vault-ink);
+  }
+  .field-row{margin-bottom:14px;}
+  .field-label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    color:var(--vault-sub);
+    margin-bottom:6px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .field-label input[type="checkbox"]{
+    width:16px;height:16px;accent-color:var(--vault-accent);cursor:pointer;
+  }
+  .field-row input[type="text"],
+  .field-row input[type="email"],
+  .field-row input[type="tel"],
+  .field-row input[type="date"],
+  .field-row textarea{
+    width:100%;
+    border:1px solid var(--vault-border);
+    background:var(--vault-bg);
+    color:var(--vault-ink);
+    border-radius:9px;
+    padding:10px 12px;
+    font-size:15px;
+    font-family:var(--sans);
+    resize:vertical;
+  }
+  .field-row input:focus, .field-row textarea:focus{
+    outline:none;border-color:var(--vault-accent);
+  }
+
+  .dyn-row{
+    border:1px dashed var(--vault-border);
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:12px;
+    position:relative;
+  }
+  .dyn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+  .dyn-grid.four{grid-template-columns:1fr 1fr;}
+  .dyn-row .small-label{font-size:11px;color:var(--vault-sub);margin-bottom:3px;display:block;}
+  .dyn-remove{
+    position:absolute;top:8px;right:8px;
+    background:none;border:none;color:var(--vault-danger);
+    cursor:pointer;font-size:13px;
+  }
+  .add-btn{
+    background:var(--vault-accent-soft);
+    color:var(--vault-accent);
+    border:1px dashed var(--vault-accent);
+    border-radius:9px;
+    padding:9px 14px;
+    font-size:14px;
+    cursor:pointer;
+    margin-bottom:16px;
+    width:100%;
+  }
+
+  .stealth-row{
+    display:flex;
+    gap:8px;
+    justify-content:flex-start;
+    margin:4px 0 16px;
+  }
+  .stealth-row input{
+    width:40px;height:40px;
+    text-align:center;
+    border:1px solid var(--vault-border);
+    background:var(--vault-bg);
+    color:var(--vault-ink);
+    border-radius:8px;
+    font-size:16px;
+  }
+  .stealth-row input:focus{outline:none;border-color:var(--vault-accent);}
+
+  .toast{
+    position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);
+    background:var(--vault-ink);color:var(--vault-bg);
+    padding:10px 18px;border-radius:20px;font-size:14px;
+    opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;
+    z-index:100;white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* modal */
+  .modal-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);
+    align-items:center;justify-content:center;z-index:200;padding:16px;
+  }
+  .modal-backdrop.show{display:flex;}
+  .modal{
+    background:var(--vault-surface);
+    border-radius:16px;
+    max-width:420px;width:100%;
+    padding:20px;
+    max-height:86vh;
+    overflow-y:auto;
+  }
+  .modal h3{font-family:var(--serif);margin-top:0;}
+  .modal .field-row label.plain{
+    font-size:13px;color:var(--vault-sub);display:block;margin-bottom:6px;
+  }
+  .modal input[type="text"]{
+    width:100%;border:1px solid var(--vault-border);background:var(--vault-bg);
+    color:var(--vault-ink);border-radius:9px;padding:9px 11px;font-size:15px;margin-bottom:12px;
+  }
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;}
+  .letters-row{display:flex;gap:8px;}
+  .letters-row input{width:56px !important;text-align:center;}
+  .helptext{font-size:12.5px;color:var(--vault-sub);line-height:1.5;margin:0 0 14px;}
+
+  @media (max-width:420px){
+    .calc-value{font-size:36px;}
+    .dyn-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ CALCULATOR / LOCK SCREEN ============ -->
+<div id="calcScreen">
+  <div class="calc-body">
+    <div class="calc-brand">PRIVORA</div>
+    <div class="calc-display">
+      <div class="calc-sub" id="calcSub"></div>
+      <div class="calc-value" id="calcValue">0</div>
+    </div>
+    <div class="calc-grid">
+      <button class="calc-key fn" data-action="clear">AC</button>
+      <button class="calc-key fn" data-action="backspace">⌫</button>
+      <button class="calc-key fn" data-action="percent">%</button>
+      <button class="calc-key op" data-op="÷">÷</button>
+
+      <button class="calc-key num" data-digit="7">7</button>
+      <button class="calc-key num" data-digit="8">8</button>
+      <button class="calc-key num" data-digit="9">9</button>
+      <button class="calc-key op" data-op="×">×</button>
+
+      <button class="calc-key num" data-digit="4">4</button>
+      <button class="calc-key num" data-digit="5">5</button>
+      <button class="calc-key num" data-digit="6">6</button>
+      <button class="calc-key op" data-op="−">−</button>
+
+      <button class="calc-key num" data-digit="1">1</button>
+      <button class="calc-key num" data-digit="2">2</button>
+      <button class="calc-key num" data-digit="3">3</button>
+      <button class="calc-key op" data-op="+">+</button>
+
+      <button class="calc-key num zero" data-digit="0">0</button>
+      <button class="calc-key num" data-action="decimal">.</button>
+      <button class="calc-key op" data-action="equals">=</button>
+    </div>
+    <div class="calc-cancel-link" id="calcCancelLink">අවලංගු කරන්න</div>
+  </div>
+</div>
+
+<!-- ============ VAULT SCREEN ============ -->
+<div id="vaultScreen">
+  <div class="vault-header">
+    <div class="vault-brand">Priv<span>ora</span></div>
+    <div class="header-actions">
+      <button class="icon-btn" id="btnSettings">සැකසුම්</button>
+      <button class="icon-btn" id="btnSave">Save</button>
+      <button class="icon-btn primary" id="btnLock">🔒 Lock</button>
+    </div>
+  </div>
+
+  <div class="vault-wrap" id="vaultWrap">
+    <!-- groups injected by JS -->
+  </div>
+
+  <div class="copy-bar">
+    <span class="count" id="copyCount">0 selected</span>
+    <div class="copy-bar-actions">
+      <button class="icon-btn" id="btnSelectAll">සියල්ල තෝරන්න</button>
+      <button class="icon-btn" id="btnClearSel">හිස් කරන්න</button>
+      <button class="icon-btn primary" id="btnCopySel">Copy</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Settings modal -->
+<div class="modal-backdrop" id="settingsBackdrop">
+  <div class="modal">
+    <h3>සැකසුම්</h3>
+
+    <p class="helptext">Password එක වෙනස් කිරීමට Calculator keypad එක භාවිත වේ. අවම අංක 6ක් අවශ්‍යයි.</p>
+    <button class="icon-btn primary" id="btnChangePassword" style="width:100%;margin-bottom:18px;">Password වෙනස් කරන්න</button>
+
+    <hr style="border:none;border-top:1px solid var(--vault-border);margin:14px 0;">
+
+    <div id="secretSetupSection">
+      <p class="helptext">දත්ත වලින් සඟවා තැබිය යුතු අකුරු දෙක සහ ඉලක්කම් දෙක මෙහි එක වරක් සකසන්න. Save කළ පසු ඒවා නැවත මෙහි පෙන්විය නොහැකි අතර වෙනස් කළ නොහැක — ආරක්ෂාව සඳහා එසේය. දත්ත සම්පූර්ණයෙන් බැලීමට/Copy කිරීමට, දත්ත පිටුවේ පහළින්ම ඇති නොනම් කළ කොටු 4 තුළ මේවා නිවැරදිව ඇතුළත් කළ යුතුය.</p>
+      <label class="plain">සඟවන අකුරු 2</label>
+      <div class="letters-row" style="margin-bottom:12px;">
+        <input type="text" maxlength="1" id="cfgLetter1">
+        <input type="text" maxlength="1" id="cfgLetter2">
+      </div>
+      <label class="plain">සඟවන ඉලක්කම් 2</label>
+      <div class="letters-row" style="margin-bottom:6px;">
+        <input type="text" maxlength="1" id="cfgDigit1" inputmode="numeric">
+        <input type="text" maxlength="1" id="cfgDigit2" inputmode="numeric">
+      </div>
+    </div>
+
+    <div id="secretLockedNotice" style="display:none;">
+      <p class="helptext">සඟවන අකුරු දෙක සහ ඉලක්කම් දෙක දැනටමත් සකසා ඇත. ආරක්ෂාව සඳහා ඒවා නැවත පෙන්විය නොහැක, වෙනස්ද කළ නොහැක. වෙනස් කිරීමට අවශ්‍ය නම් දත්ත පිටුවේ පහළින්ම ඇති "සියලු දත්ත මකා අලුතින් පටන් ගන්න" බොත්තම භාවිත කර සියල්ල මකා නැවත සකසන්න.</p>
+    </div>
+
+    <div class="modal-actions">
+      <button class="icon-btn" id="btnCloseSettings">වසන්න</button>
+      <button class="icon-btn primary" id="btnSaveSettings">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const STORAGE_KEY = "privora_vault_v1";
+  const DEFAULT_PASSWORD = "810826"; // only used to create the very first vault
+  const PBKDF2_ITERATIONS = 150000;
+
+  const defaultState = () => ({
+    secretLetters: ["",""],
+    secretDigits: ["",""],
+    fields: {},
+    schools: [],
+    otherInfo: []
+  });
+
+  // In-memory only — never written to disk in plain form, and wiped on lock.
+  let state = null;
+  let sessionKey = null;   // CryptoKey, derived from the password via PBKDF2
+  let sessionSalt = null;  // Uint8Array, paired with sessionKey
+
+  /* ---------------- CRYPTO HELPERS ---------------- */
+  function randomBytes(n){ return crypto.getRandomValues(new Uint8Array(n)); }
+  function bufToB64(buf){
+    const bytes = new Uint8Array(buf);
+    let bin = "";
+    for(let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function b64ToBuf(b64){
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+    return arr.buffer;
+  }
+  async function deriveKey(password, saltBytes){
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(password), {name:"PBKDF2"}, false, ["deriveKey"]
+    );
+    return crypto.subtle.deriveKey(
+      {name:"PBKDF2", salt:saltBytes, iterations:PBKDF2_ITERATIONS, hash:"SHA-256"},
+      keyMaterial,
+      {name:"AES-GCM", length:256},
+      false,
+      ["encrypt","decrypt"]
+    );
+  }
+  async function encryptWithKey(key, saltBytes, obj){
+    const iv = randomBytes(12);
+    const data = new TextEncoder().encode(JSON.stringify(obj));
+    const cipherBuf = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, data);
+    return { v:1, salt:bufToB64(saltBytes.buffer), iv:bufToB64(iv.buffer), data:bufToB64(cipherBuf) };
+  }
+  async function decryptWithPassword(password, blob){
+    const saltBytes = new Uint8Array(b64ToBuf(blob.salt));
+    const ivBytes = new Uint8Array(b64ToBuf(blob.iv));
+    const key = await deriveKey(password, saltBytes);
+    const cipherBuf = b64ToBuf(blob.data);
+    const plainBuf = await crypto.subtle.decrypt({name:"AES-GCM", iv:ivBytes}, key, cipherBuf); // throws if password is wrong
+    const obj = JSON.parse(new TextDecoder().decode(plainBuf));
+    return { obj, key, saltBytes };
+  }
+
+  /* ---------------- PERSISTENCE (queued so concurrent saves can't race) ---------------- */
+  let saveQueue = Promise.resolve();
+  function persistState(){
+    saveQueue = saveQueue.then(async ()=>{
+      if(!sessionKey || !sessionSalt || !state) return;
+      try{
+        const blob = await encryptWithKey(sessionKey, sessionSalt, state);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(blob));
+      }catch(e){ /* storage unavailable */ }
+    });
+    return saveQueue;
+  }
+  function saveState(){ return persistState(); } // kept as an alias so existing call sites don't need renaming
+
+  function escapeHtml(str){
+    return (str||"").replace(/[&<>"']/g, c => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  /* ---------------- TOAST ---------------- */
+  let toastTimer = null;
+  function showToast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> t.classList.remove("show"), 2200);
+  }
+
+  /* ---------------- FIELD DEFINITIONS ---------------- */
+  const FIELD_GROUPS = [
+    { title:"පුද්ගලික තොරතුරු", fields:[
+      {id:"fullName", label:"සම්පූර්ණ නම", type:"text"},
+      {id:"dob", label:"උපන්දිනය", type:"date"},
+      {id:"nic", label:"හැඳුනුම්පත් අංකය", type:"text"},
+      {id:"passport", label:"ගුවන් ගමන් බලපත්‍ර අංකය", type:"text"},
+      {id:"bloodGroup", label:"රුධිර කාණ්ඩය", type:"text"},
+      {id:"birthCert", label:"උප්පැන්න සහතික අංකය", type:"text"}
+    ]},
+    { title:"විවාහ තොරතුරු", fields:[
+      {id:"marriageCert", label:"විවාහ සහතික අංකය", type:"text"},
+      {id:"marriageDate", label:"විවාහ වූ දිනය", type:"date"}
+    ]},
+    { title:"සම්බන්ධතා", fields:[
+      {id:"postalAddress", label:"තැපල් ලිපිනය", type:"textarea"},
+      {id:"email", label:"විද්‍යුත් තැපල් ලිපිනය", type:"email"},
+      {id:"phone1", label:"දුරකතන අංක 1", type:"tel"},
+      {id:"phone2", label:"දුරකතන අංක 2", type:"tel"},
+      {id:"phone3", label:"දුරකතන අංක 3", type:"tel"}
+    ]},
+    { title:"පරිපාලන කොට්ඨාස", fields:[
+      {id:"district", label:"පදිංචි දිස්ත්‍රික්කය", type:"text"},
+      {id:"dsDivision", label:"ප්‍රාදේශීය ලේකම් කොට්ඨාසය", type:"text"},
+      {id:"gnDivision", label:"ග්‍රාම නිළධාරී කොට්ඨාසය", type:"text"},
+      {id:"electoralDivision", label:"මැතිවරණ කොට්ඨාසය", type:"text"},
+      {id:"electoralDistrict", label:"මැතිවරණ දිස්ත්‍රික්කය", type:"text"}
+    ]},
+    { title:"රාජකාරි / රජයේ සේවය", fields:[
+      {id:"govInstitutions", label:"රාජ්‍ය සේවයේ වෙනත් ආයතන", type:"textarea"},
+      {id:"teacherSalaryNo", label:"ගුරු වැටුප් අංකය", type:"text"},
+      {id:"wop", label:"W&OP", type:"text"},
+      {id:"edcs", label:"EDCS", type:"text"},
+      {id:"epf", label:"EPF", type:"text"},
+      {id:"etf", label:"ETF", type:"text"}
+    ]},
+    { title:"මූල්‍ය හා සබැඳි", fields:[
+      {id:"bankAccounts", label:"බැංකු ගිණුම් අංක", type:"textarea"},
+      {id:"importantLinks", label:"අත්‍යවශ්‍ය link", type:"textarea"},
+      {id:"myPassword", label:"My password", type:"text"}
+    ]}
+  ];
+
+  /* ---------------- RENDER VAULT ---------------- */
+  const wrap = document.getElementById("vaultWrap");
+
+  function fieldRowHtml(f){
+    const val = escapeHtml(state.fields[f.id] || "");
+    const control = f.type === "textarea"
+      ? `<textarea rows="2" data-field-input="${f.id}">${val}</textarea>`
+      : `<input type="${f.type}" data-field-input="${f.id}" value="${val}">`;
+    return `
+      <div class="field-row">
+        <label class="field-label">
+          <input type="checkbox" class="copy-check" data-copy-id="field:${f.id}">
+          <span>${f.label}</span>
+        </label>
+        ${control}
+      </div>`;
+  }
+
+  function schoolRowHtml(s, idx){
+    return `
+      <div class="dyn-row" data-school-idx="${idx}">
+        <button class="dyn-remove" data-remove-school="${idx}">ඉවත් කරන්න ✕</button>
+        <label class="field-label">
+          <input type="checkbox" class="copy-check" data-copy-id="school:${idx}">
+          <span>පාසල ${idx+1}</span>
+        </label>
+        <input type="text" placeholder="පාසලේ නම" data-school-field="name" data-school-idx="${idx}" value="${escapeHtml(s.name)}">
+        <div class="dyn-grid" style="margin-top:8px;">
+          <div>
+            <span class="small-label">වර්ෂය</span>
+            <input type="text" data-school-field="year" data-school-idx="${idx}" value="${escapeHtml(s.year)}">
+          </div>
+          <div></div>
+          <div>
+            <span class="small-label">සිට</span>
+            <input type="text" data-school-field="from" data-school-idx="${idx}" value="${escapeHtml(s.from)}">
+          </div>
+          <div>
+            <span class="small-label">දක්වා</span>
+            <input type="text" data-school-field="to" data-school-idx="${idx}" value="${escapeHtml(s.to)}">
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function otherRowHtml(o, idx){
+    return `
+      <div class="dyn-row" data-other-idx="${idx}">
+        <button class="dyn-remove" data-remove-other="${idx}">ඉවත් කරන්න ✕</button>
+        <label class="field-label">
+          <input type="checkbox" class="copy-check" data-copy-id="other:${idx}">
+          <span>වෙනත් තොරතුරු ${idx+1}</span>
+        </label>
+        <input type="text" placeholder="මාතෘකාව" data-other-field="label" data-other-idx="${idx}" value="${escapeHtml(o.label)}" style="margin-bottom:8px;">
+        <textarea rows="2" placeholder="විස්තරය" data-other-field="value" data-other-idx="${idx}">${escapeHtml(o.value)}</textarea>
+      </div>`;
+  }
+
+  function renderVault(){
+    let html = "";
+
+    FIELD_GROUPS.forEach(group=>{
+      html += `<div class="group"><h3>${group.title}</h3>`;
+      group.fields.forEach(f=> html += fieldRowHtml(f));
+      html += `</div>`;
+    });
+
+    html += `<div class="group"><h3>සේවය කළ පාසල් සහ කාල සීමා</h3>`;
+    state.schools.forEach((s,idx)=> html += schoolRowHtml(s, idx));
+    html += `</div>`;
+    html += `<button class="add-btn" id="btnAddSchool">+ පාසලක් එක් කරන්න</button>`;
+
+    html += `<div class="group"><h3>වෙනත් තොරතුරු</h3>`;
+    state.otherInfo.forEach((o,idx)=> html += otherRowHtml(o, idx));
+    html += `</div>`;
+    html += `<button class="add-btn" id="btnAddOther">+ තොරතුරක් එක් කරන්න</button>`;
+
+    // four unlabeled verification boxes, blended in with no descriptive text
+    html += `
+      <div class="group">
+        <div class="stealth-row">
+          <input type="text" maxlength="1" aria-label="field" id="vbox0">
+          <input type="text" maxlength="1" aria-label="field" id="vbox1">
+          <input type="text" maxlength="1" aria-label="field" id="vbox2" inputmode="numeric">
+          <input type="text" maxlength="1" aria-label="field" id="vbox3" inputmode="numeric">
+        </div>
+      </div>`;
+
+    html += `<button class="icon-btn danger" id="btnClearAll" style="width:100%;">සියලු දත්ත මකා අලුතින් පටන් ගන්න (Delete all data and Reset app)</button>`;
+
+    wrap.innerHTML = html;
+    attachDynamicListeners();
+    updateCopyCount();
+    refreshMaskState();
+  }
+
+  function attachDynamicListeners(){
+    document.getElementById("btnAddSchool").addEventListener("click", ()=>{
+      state.schools.push({name:"",year:"",from:"",to:""});
+      saveState(); renderVault();
+    });
+    document.getElementById("btnAddOther").addEventListener("click", ()=>{
+      state.otherInfo.push({label:"",value:""});
+      saveState(); renderVault();
+    });
+    document.getElementById("btnClearAll").addEventListener("click", ()=>{
+      if(confirm("සම්පූර්ණ app එක reset කරන්නද? මෙමගින් සියලුම දත්ත, සඟවන අකුරු/ඉලක්කම් සහ password ද ඇතුළුව සියල්ල ස්ථිරවම මකා දමයි. මෙය අහෝසි කළ නොහැක.")){
+        try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+        state = null;
+        sessionKey = null;
+        sessionSalt = null;
+        showToast("සියල්ල මකා reset කරන ලදි");
+        lockVault();
+      }
+    });
+
+    wrap.querySelectorAll("[data-remove-school]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const idx = parseInt(btn.getAttribute("data-remove-school"),10);
+        state.schools.splice(idx,1);
+        saveState(); renderVault();
+      });
+    });
+    wrap.querySelectorAll("[data-remove-other]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const idx = parseInt(btn.getAttribute("data-remove-other"),10);
+        state.otherInfo.splice(idx,1);
+        saveState(); renderVault();
+      });
+    });
+
+    wrap.querySelectorAll("[data-field-input]").forEach(el=>{
+      el.addEventListener("input", ()=>{
+        state.fields[el.getAttribute("data-field-input")] = el.value;
+        saveState();
+      });
+    });
+    wrap.querySelectorAll("[data-school-field]").forEach(el=>{
+      el.addEventListener("input", ()=>{
+        const idx = parseInt(el.getAttribute("data-school-idx"),10);
+        const key = el.getAttribute("data-school-field");
+        state.schools[idx][key] = el.value;
+        saveState();
+      });
+    });
+    wrap.querySelectorAll("[data-other-field]").forEach(el=>{
+      el.addEventListener("input", ()=>{
+        const idx = parseInt(el.getAttribute("data-other-idx"),10);
+        const key = el.getAttribute("data-other-field");
+        state.otherInfo[idx][key] = el.value;
+        saveState();
+      });
+    });
+
+    wrap.querySelectorAll(".copy-check").forEach(cb=>{
+      cb.addEventListener("change", updateCopyCount);
+    });
+
+    ["vbox0","vbox1","vbox2","vbox3"].forEach(id=>{
+      const el = document.getElementById(id);
+      el.addEventListener("input", ()=>{
+        if(el.value.length>1) el.value = el.value.slice(0,1);
+        refreshMaskState();
+      });
+    });
+  }
+
+  function updateCopyCount(){
+    const n = wrap.querySelectorAll(".copy-check:checked").length;
+    document.getElementById("copyCount").textContent = n + " selected";
+  }
+
+  /* ---------------- VERIFICATION (secret letters/digits) ---------------- */
+  function secretConfigured(){
+    return (state.secretLetters[0] || state.secretLetters[1] || state.secretDigits[0] || state.secretDigits[1]);
+  }
+  function isVerified(){
+    if(!secretConfigured()) return true;
+    const letters = [
+      (document.getElementById("vbox0")||{}).value || "",
+      (document.getElementById("vbox1")||{}).value || ""
+    ].map(v=>v.toLowerCase()).sort().join(",");
+    const digits = [
+      (document.getElementById("vbox2")||{}).value || "",
+      (document.getElementById("vbox3")||{}).value || ""
+    ].sort().join(",");
+    const reqLetters = [state.secretLetters[0]||"", state.secretLetters[1]||""].map(v=>v.toLowerCase()).sort().join(",");
+    const reqDigits = [state.secretDigits[0]||"", state.secretDigits[1]||""].sort().join(",");
+    return letters === reqLetters && digits === reqDigits;
+  }
+
+  /* ---------------- MASKING (hide secret letters/digits in displayed data) ---------------- */
+  function maskValue(val){
+    let out = val || "";
+    const chars = [];
+    (state.secretLetters||[]).forEach(c=>{ if(c) chars.push(c); });
+    (state.secretDigits||[]).forEach(c=>{ if(c) chars.push(c); });
+    chars.forEach(c=>{
+      const esc = c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      out = out.replace(new RegExp(esc, "gi"), "");
+    });
+    return out;
+  }
+
+  function refreshMaskState(){
+    const verified = isVerified();
+
+    wrap.querySelectorAll("[data-field-input]").forEach(el=>{
+      const id = el.getAttribute("data-field-input");
+      const def = FIELD_GROUPS.flatMap(g=>g.fields).find(f=>f.id===id);
+      const raw = state.fields[id] || "";
+      const lock = !verified && raw !== ""; // only lock fields that already hold data
+      if(el.tagName === "TEXTAREA"){
+        el.value = lock ? maskValue(raw) : raw;
+        el.readOnly = lock;
+      } else {
+        el.type = lock ? "text" : (def ? def.type : "text");
+        el.value = lock ? maskValue(raw) : raw;
+        el.readOnly = lock;
+      }
+    });
+    wrap.querySelectorAll("[data-school-field]").forEach(el=>{
+      const idx = parseInt(el.getAttribute("data-school-idx"),10);
+      const key = el.getAttribute("data-school-field");
+      const raw = (state.schools[idx] && state.schools[idx][key]) || "";
+      const lock = !verified && raw !== "";
+      el.value = lock ? maskValue(raw) : raw;
+      el.readOnly = lock;
+    });
+    wrap.querySelectorAll("[data-other-field]").forEach(el=>{
+      const idx = parseInt(el.getAttribute("data-other-idx"),10);
+      const key = el.getAttribute("data-other-field");
+      const raw = (state.otherInfo[idx] && state.otherInfo[idx][key]) || "";
+      const lock = !verified && raw !== "";
+      el.value = lock ? maskValue(raw) : raw;
+      el.readOnly = lock;
+    });
+  }
+
+  /* ---------------- COPY SELECTED ---------------- */
+  function gatherSelectedText(){
+    const lines = [];
+    wrap.querySelectorAll(".copy-check:checked").forEach(cb=>{
+      const key = cb.getAttribute("data-copy-id");
+      const [kind, ref] = key.split(":");
+      if(kind === "field"){
+        const f = FIELD_GROUPS.flatMap(g=>g.fields).find(x=>x.id===ref);
+        const val = state.fields[ref] || "";
+        lines.push(`${f ? f.label : ref}: ${val}`);
+      } else if(kind === "school"){
+        const s = state.schools[parseInt(ref,10)];
+        if(s) lines.push(`පාසල: ${s.name} | වර්ෂය: ${s.year} | සිට: ${s.from} | දක්වා: ${s.to}`);
+      } else if(kind === "other"){
+        const o = state.otherInfo[parseInt(ref,10)];
+        if(o) lines.push(`${o.label}: ${o.value}`);
+      }
+    });
+    return lines.join("\n");
+  }
+
+  function copyToClipboard(text){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>showToast("Copied!")).catch(()=>fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text){
+    try{
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showToast("Copied!");
+    }catch(e){
+      showToast("Copy අසාර්ථකයි");
+    }
+  }
+
+  document.getElementById("btnSelectAll").addEventListener("click", ()=>{
+    wrap.querySelectorAll(".copy-check").forEach(cb=> cb.checked = true);
+    updateCopyCount();
+  });
+  document.getElementById("btnClearSel").addEventListener("click", ()=>{
+    wrap.querySelectorAll(".copy-check").forEach(cb=> cb.checked = false);
+    updateCopyCount();
+  });
+  document.getElementById("btnCopySel").addEventListener("click", ()=>{
+    const n = wrap.querySelectorAll(".copy-check:checked").length;
+    if(n===0){ showToast("කරුණාකර දත්ත තෝරන්න"); return; }
+    if(!isVerified()){
+      showToast("Copy කිරීමට පෙර අදාළ කොටු පුරවන්න");
+      return;
+    }
+    const text = gatherSelectedText();
+    copyToClipboard(text);
+  });
+
+  document.getElementById("btnSave").addEventListener("click", ()=>{
+    saveState();
+    showToast("Saved");
+  });
+
+  /* ---------------- LOCK / UNLOCK ---------------- */
+  const calcScreen = document.getElementById("calcScreen");
+  const vaultScreen = document.getElementById("vaultScreen");
+  const calcValueEl = document.getElementById("calcValue");
+  const calcSubEl = document.getElementById("calcSub");
+  const calcCancelLink = document.getElementById("calcCancelLink");
+
+  function unlockVault(){
+    calcScreen.style.display = "none";
+    vaultScreen.style.display = "block";
+    renderVault();
+  }
+
+  async function attemptUnlock(password){
+    let stored = null;
+    try{ stored = localStorage.getItem(STORAGE_KEY); }catch(e){}
+
+    try{
+      if(!stored){
+        // first run ever — only the known default password may create the vault
+        if(password !== DEFAULT_PASSWORD) return; // silently fail, looks like a normal calculator
+        const newSalt = randomBytes(16);
+        const newKey = await deriveKey(password, newSalt);
+        sessionKey = newKey;
+        sessionSalt = newSalt;
+        state = defaultState();
+        await persistState();
+        clearAllCalc();
+        unlockVault();
+        return;
+      }
+
+      const blob = JSON.parse(stored);
+
+      if(blob && blob.salt && blob.iv && blob.data){
+        // normal path: try to decrypt with the entered password
+        const {obj, key, saltBytes} = await decryptWithPassword(password, blob);
+        state = obj;
+        sessionKey = key;
+        sessionSalt = saltBytes;
+        clearAllCalc();
+        unlockVault();
+        return;
+      }
+
+      // legacy plaintext vault from before encryption was added — migrate it once
+      if(blob && blob.fields !== undefined && blob.password !== undefined){
+        if(password !== blob.password) return; // silently fail
+        const migrated = Object.assign(defaultState(), blob);
+        delete migrated.password;
+        const newSalt = randomBytes(16);
+        const newKey = await deriveKey(password, newSalt);
+        sessionKey = newKey;
+        sessionSalt = newSalt;
+        state = migrated;
+        await persistState();
+        clearAllCalc();
+        unlockVault();
+        return;
+      }
+      // unrecognized data — fail silently
+    }catch(e){
+      // wrong password (auth tag mismatch) or corrupted data — fail silently, stays a calculator
+    }
+  }
+  function lockVault(){
+    vaultScreen.style.display = "none";
+    calcScreen.style.display = "flex";
+    clearAllCalc();
+    // wipe the decrypted vault + key from memory — nothing sensitive lingers while locked
+    state = null;
+    sessionKey = null;
+    sessionSalt = null;
+  }
+  document.getElementById("btnLock").addEventListener("click", lockVault);
+
+  /* ---------------- SETTINGS MODAL ---------------- */
+  const settingsBackdrop = document.getElementById("settingsBackdrop");
+  const secretSetupSection = document.getElementById("secretSetupSection");
+  const secretLockedNotice = document.getElementById("secretLockedNotice");
+  const btnSaveSettings = document.getElementById("btnSaveSettings");
+
+  document.getElementById("btnSettings").addEventListener("click", ()=>{
+    if(secretConfigured()){
+      // already set once — never re-display or allow editing; just show the locked notice
+      secretSetupSection.style.display = "none";
+      secretLockedNotice.style.display = "block";
+      btnSaveSettings.style.display = "none";
+    } else {
+      document.getElementById("cfgLetter1").value = "";
+      document.getElementById("cfgLetter2").value = "";
+      document.getElementById("cfgDigit1").value = "";
+      document.getElementById("cfgDigit2").value = "";
+      secretSetupSection.style.display = "block";
+      secretLockedNotice.style.display = "none";
+      btnSaveSettings.style.display = "inline-block";
+    }
+    settingsBackdrop.classList.add("show");
+  });
+  document.getElementById("btnCloseSettings").addEventListener("click", ()=>{
+    settingsBackdrop.classList.remove("show");
+  });
+  document.getElementById("btnSaveSettings").addEventListener("click", ()=>{
+    if(secretConfigured()) return; // locked — cannot be changed once set
+    state.secretLetters = [
+      document.getElementById("cfgLetter1").value.trim(),
+      document.getElementById("cfgLetter2").value.trim()
+    ];
+    state.secretDigits = [
+      document.getElementById("cfgDigit1").value.trim(),
+      document.getElementById("cfgDigit2").value.trim()
+    ];
+    saveState();
+    settingsBackdrop.classList.remove("show");
+    showToast("සැකසුම් සුරැකිණි");
+    renderVault();
+  });
+
+  let pendingPasswordChangeStep = null; // null | 'new' | 'confirm'
+  let newPasswordTemp = null;
+
+  document.getElementById("btnChangePassword").addEventListener("click", ()=>{
+    settingsBackdrop.classList.remove("show");
+    startPasswordChange();
+  });
+
+  function startPasswordChange(){
+    pendingPasswordChangeStep = "new";
+    newPasswordTemp = null;
+    vaultScreen.style.display = "none";
+    calcScreen.style.display = "flex";
+    clearAllCalc();
+    calcSubEl.textContent = "අලුත් Password එක ඇතුළත් කර = ඔබන්න (අවම අංක 6)";
+    calcCancelLink.style.display = "block";
+  }
+  calcCancelLink.addEventListener("click", ()=>{
+    pendingPasswordChangeStep = null;
+    newPasswordTemp = null;
+    calcCancelLink.style.display = "none";
+    unlockVault();
+  });
+
+  function handlePasswordChangeInput(value){
+    if(pendingPasswordChangeStep === "new"){
+      if(value.length < 6){
+        calcSubEl.textContent = "අවම අංක 6ක් අවශ්‍යයි, නැවත උත්සාහ කරන්න";
+        return;
+      }
+      newPasswordTemp = value;
+      pendingPasswordChangeStep = "confirm";
+      calcSubEl.textContent = "නැවත Password එක ඇතුළත් කරන්න";
+    } else if(pendingPasswordChangeStep === "confirm"){
+      if(value === newPasswordTemp){
+        finalizePasswordChange(value);
+      } else {
+        calcSubEl.textContent = "නොගැලපේ. නැවත අලුත් Password එකක් ඇතුළත් කරන්න";
+        pendingPasswordChangeStep = "new";
+        newPasswordTemp = null;
+      }
+    }
+  }
+
+  async function finalizePasswordChange(newPassword){
+    calcSubEl.textContent = "Password එක update කරමින්...";
+    try{
+      const newSalt = randomBytes(16);
+      const newKey = await deriveKey(newPassword, newSalt);
+      sessionKey = newKey;
+      sessionSalt = newSalt;
+      await persistState();
+      pendingPasswordChangeStep = null;
+      newPasswordTemp = null;
+      calcCancelLink.style.display = "none";
+      calcSubEl.textContent = "";
+      showToast("Password වෙනස් විය");
+      unlockVault();
+    }catch(e){
+      calcSubEl.textContent = "දෝෂයක් සිදු විය, නැවත උත්සාහ කරන්න";
+      pendingPasswordChangeStep = null;
+      newPasswordTemp = null;
+    }
+  }
+
+  /* ---------------- CALCULATOR ENGINE ---------------- */
+  let calc = { display:"0", firstOperand:null, operator:null, waitingForSecond:false };
+
+  function updateCalcDisplay(){
+    calcValueEl.textContent = calc.display;
+  }
+  function clearAllCalc(){
+    calc = { display:"0", firstOperand:null, operator:null, waitingForSecond:false };
+    updateCalcDisplay();
+    if(!pendingPasswordChangeStep){
+      calcSubEl.textContent = "";
+      calcCancelLink.style.display = "none";
+    }
+  }
+  function inputDigit(d){
+    if(calc.waitingForSecond){
+      calc.display = d;
+      calc.waitingForSecond = false;
+    } else {
+      calc.display = calc.display === "0" ? d : calc.display + d;
+    }
+    updateCalcDisplay();
+  }
+  function inputDecimal(){
+    if(calc.waitingForSecond){
+      calc.display = "0.";
+      calc.waitingForSecond = false;
+      updateCalcDisplay();
+      return;
+    }
+    if(!calc.display.includes(".")) calc.display += ".";
+    updateCalcDisplay();
+  }
+  function backspaceCalc(){
+    if(calc.waitingForSecond) return;
+    calc.display = calc.display.length > 1 ? calc.display.slice(0,-1) : "0";
+    updateCalcDisplay();
+  }
+  function inputPercent(){
+    calc.display = String(parseFloat(calc.display) / 100);
+    updateCalcDisplay();
+  }
+  function doCalculate(a, op, b){
+    switch(op){
+      case "+": return a + b;
+      case "−": return a - b;
+      case "×": return a * b;
+      case "÷": return b === 0 ? NaN : a / b;
+      default: return b;
+    }
+  }
+  function inputOperator(nextOp){
+    const inputValue = parseFloat(calc.display);
+    if(calc.operator && calc.waitingForSecond){
+      calc.operator = nextOp;
+      return;
+    }
+    if(calc.firstOperand === null){
+      calc.firstOperand = inputValue;
+    } else if(calc.operator){
+      const result = doCalculate(calc.firstOperand, calc.operator, inputValue);
+      calc.display = String(result);
+      calc.firstOperand = result;
+      updateCalcDisplay();
+    }
+    calc.waitingForSecond = true;
+    calc.operator = nextOp;
+  }
+  function inputEquals(){
+    const isPlainNumber = calc.operator === null && calc.firstOperand === null && /^\d{6,}$/.test(calc.display);
+
+    if(isPlainNumber && pendingPasswordChangeStep){
+      const val = calc.display;
+      clearAllCalc();
+      handlePasswordChangeInput(val);
+      return;
+    }
+    if(isPlainNumber){
+      attemptUnlock(calc.display);
+      return;
+    }
+    if(calc.operator === null || calc.firstOperand === null) return;
+    const inputValue = parseFloat(calc.display);
+    const result = doCalculate(calc.firstOperand, calc.operator, inputValue);
+    calc.display = String(result);
+    calc.firstOperand = null;
+    calc.operator = null;
+    calc.waitingForSecond = false;
+    updateCalcDisplay();
+  }
+
+  document.querySelectorAll(".calc-key").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const digit = btn.getAttribute("data-digit");
+      const op = btn.getAttribute("data-op");
+      const action = btn.getAttribute("data-action");
+      if(digit !== null) inputDigit(digit);
+      else if(op) inputOperator(op);
+      else if(action === "clear") clearAllCalc();
+      else if(action === "backspace") backspaceCalc();
+      else if(action === "percent") inputPercent();
+      else if(action === "decimal") inputDecimal();
+      else if(action === "equals") inputEquals();
+    });
+  });
+
+  /* ---------------- INIT ---------------- */
+  updateCalcDisplay();
+})();
+</script>
+</body>
+</html>
