@@ -54,6 +54,9 @@ th{color:var(--mu);font-weight:500;font-size:12px}
       <div><label>විෂයය</label><input id="f_subject"></div>
       <div><label>මිල</label><input id="f_price" type="number" step="0.01"></div>
       <div><label>ISBN</label><input id="f_isbn"></div>
+      <div><label>පොත් අංකය</label><input id="f_book_number"></div>
+      <div><label>රාක්ක අංකය</label><input id="f_rack_number"></div>
+      <div><label>තට්ටු (Shelf) අංකය</label><input id="f_shelf_number"></div>
     </div>
     <div class="row">
       <button onclick="save()">සුරකින්න</button>
@@ -65,9 +68,13 @@ th{color:var(--mu);font-weight:500;font-size:12px}
   </div>
 
   <div class="card">
-    <input id="q" placeholder="🔍 නම, කතුවරයා, විෂයය හෝ ISBN මගින් සොයන්න..." oninput="debounce()">
+    <input id="q" placeholder="🔍 නම, කතුවරයා, විෂයය, ISBN හෝ පොත් අංකය මගින් සොයන්න..." oninput="debounce()">
+    <div class="row" style="margin-top:8px"><span style="font-size:13px;color:var(--mu)">ස්ථානය:</span>
+      <input id="fr" placeholder="රාක්ක අංකය" oninput="debounce()" style="width:140px">
+      <input id="fs" placeholder="තට්ටු අංකය" oninput="debounce()" style="width:140px">
+      <button class="g" onclick="$('fr').value=$('fs').value=$('q').value='';page=0;load()">පෙරහන් හිස් කරන්න</button></div>
     <div class="tw" style="margin-top:10px">
-      <table><thead><tr><th>පොතේ නම</th><th>කතුවරයා</th><th>විෂයය</th><th>මිල</th><th>ISBN</th><th></th></tr></thead>
+      <table><thead><tr><th>පොතේ නම</th><th>කතුවරයා</th><th>විෂයය</th><th>මිල</th><th>ISBN</th><th>පොත් අං.</th><th>රාක්කය</th><th>තට්ටුව</th><th></th></tr></thead>
       <tbody id="tb"></tbody></table>
     </div>
     <div class="row" style="margin-top:10px;justify-content:center">
@@ -82,7 +89,7 @@ const SUPABASE_URL = "https://jcijglwpkfluyzrltimk.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjaWpnbHdwa2ZsdXl6cmx0aW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MzU3OTUsImV4cCI6MjA4MjQxMTc5NX0.dvT8OiyVEiYn_DhkMakmSq1Vvr4REDr0kYPnyqCtWHs";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-const F = ["title","author","subject","price","isbn"];
+const F = ["title","author","subject","price","isbn","book_number","rack_number","shelf_number"];
 const PAGE = 50;
 let page = 0, editId = null, timer, rows = [];
 
@@ -128,7 +135,11 @@ function go(n){ if(page + n < 0) return; page += n; load(); }
 async function load(){
   let qb = sb.from("books").select("*", {count:"exact"}).order("id", {ascending:false}).range(page*PAGE, page*PAGE + PAGE - 1);
   const q = $("q").value.replace(/[,()%*]/g, " ").trim();
-  if(q) qb = qb.or(["title","author","subject","isbn"].map(c => `${c}.ilike.%${q}%`).join(","));
+  const rk = clean($("fr").value), sh = clean($("fs").value);
+  if(rk) qb = qb.ilike("rack_number", rk.replace(/[%*_]/g, ""));
+  if(sh) qb = qb.ilike("shelf_number", sh.replace(/[%*_]/g, ""));
+  if(rk || sh) qb = qb.order("rack_number").order("shelf_number").order("book_number");
+  if(q) qb = qb.or(["title","author","subject","isbn","book_number"].map(c => `${c}.ilike.%${q}%`).join(","));
   const {data, count, error} = await qb;
   if(error){ say(error.message); return; }
   rows = data;
@@ -136,9 +147,9 @@ async function load(){
   $("pg").textContent = "පිටුව " + (page+1);
   const esc = s => (s ?? "").toString().replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   $("tb").innerHTML = data.map((b,i) => `<tr><td>${esc(b.title)}</td><td>${esc(b.author)}</td><td>${esc(b.subject)}</td>
-    <td>${b.price ?? ""}</td><td>${esc(b.isbn)}</td>
+    <td>${b.price ?? ""}</td><td>${esc(b.isbn)}</td><td>${esc(b.book_number)}</td><td><b>${esc(b.rack_number)}</b></td><td><b>${esc(b.shelf_number)}</b></td>
     <td style="white-space:nowrap"><button class="g" onclick="edit(${i})">✎</button> <button class="d" onclick="del(${b.id})">✕</button></td></tr>`).join("")
-    || `<tr><td colspan="6" style="color:var(--mu)">කිසිවක් නැත</td></tr>`;
+    || `<tr><td colspan="9" style="color:var(--mu)">කිසිවක් නැත</td></tr>`;
 }
 
 /* CSV import: headers = title,author,subject,price,isbn (ඕනෑම අනුපිළිවෙලක්, UTF-8) */
