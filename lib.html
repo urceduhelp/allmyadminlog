@@ -40,6 +40,9 @@ label{font-size:12px;color:var(--mu)}
 #pop .ph{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bd)}
 #pop .pb{overflow:auto;padding:14px;flex:1}
 .pager{display:flex;gap:10px;justify-content:center;align-items:center;margin:14px 0 0}
+.warn{background:#fff3cd;color:#5c4400;border:1px solid #e6c34a;border-radius:8px;padding:8px 12px;font-size:14px;margin:8px 0}
+.warn div{margin-top:4px}
+.warn button{padding:1px 8px;font-size:12px;color:#5c4400;border-color:#c9a53a}
 dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);width:min(560px,92vw)}
 dialog::backdrop{background:rgba(0,0,0,.5)}
 </style>
@@ -79,6 +82,7 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
   <div class="card">
     <b>නව පොතක් ඇතුළත් කරන්න</b>
     <div class="grid" id="addf" style="margin-top:10px"></div>
+    <div id="dup" class="warn hide"></div>
     <div class="row">
       <button onclick="addBook()">සුරකින්න</button>
       <button class="g" onclick="resetAdd()">හිස් කරන්න</button>
@@ -135,7 +139,7 @@ function readForm(p){
   return o;
 }
 const say = t => $("msg").textContent = t;
-function resetAdd(){ F.forEach(k => $("f_"+k).value = ""); }
+function resetAdd(){ F.forEach(k => $("f_"+k).value = ""); $("dup").classList.add("hide"); }
 const isEmpty = o => Object.values(o).every(v => v === null);
 
 /* auth */
@@ -147,10 +151,35 @@ async function signIn(){
 async function signOut(){ await sb.auth.signOut(); show(false); }
 sb.auth.getSession().then(({data}) => show(!!data.session));
 
+/* duplicate check: නම + කොටස සමාන පොත් */
+const likeEsc = v => v.replace(/[\\%_]/g, "\\$&");
+const locOf = b => [b.book_number && "B-"+b.book_number, b.rack_number && "R-"+b.rack_number, b.shelf_number && "S-"+b.shelf_number].filter(Boolean).join(" | ");
+async function findDups(d, excludeId){
+  if(!d.title) return [];
+  let qb = sb.from("books").select("*").ilike("title", likeEsc(d.title)).limit(5);
+  qb = d.volume ? qb.ilike("volume", likeEsc(d.volume)) : qb.is("volume", null);
+  if(excludeId) qb = qb.neq("id", excludeId);
+  const {data} = await qb; (data || []).forEach(b => cache[b.id] = b);
+  return data || [];
+}
+function showDup(dups){
+  const el = $("dup");
+  if(!dups.length){ el.classList.add("hide"); return; }
+  el.innerHTML = "⚠ <b>මෙම නමින් පොතක් දැනටමත් ඇත!</b>" + dups.map(b =>
+    `<div>• ${esc(b.title)}${b.volume ? " — " + esc(b.volume) : ""}${b.author ? " — " + esc(b.author) : ""}${locOf(b) ? " (" + esc(locOf(b)) + ")" : ""} <button class="g" onclick="openEdit(${b.id})">Ed</button></div>`).join("");
+  el.classList.remove("hide");
+}
+async function checkDup(){ showDup(await findDups(readForm("f_"))); }
+$("addf").addEventListener("focusin", e => { if(e.target.id !== "f_title" && e.target.id !== "f_volume") checkDup(); });
+$("f_volume").addEventListener("blur", checkDup);
+["f_title","f_volume"].forEach(id => $(id).addEventListener("input", () => $("dup").classList.add("hide")));
+
 /* CRUD */
 async function addBook(){
   const d = readForm("f_");
   if(isEmpty(d)){ say("අවම වශයෙන් එක් දත්තයක් හෝ ඇතුළත් කරන්න."); return; }
+  const dups = await findDups(d);
+  if(dups.length && !confirm("මෙම නමින් (සහ කොටසින්) පොතක් දැනටමත් ඇත. එසේ වුවත් නැවත ඇතුළත් කරන්නද?")){ showDup(dups); return; }
   const {error} = await sb.from("books").insert(d);
   if(error){ say("දෝෂයක්: " + error.message); return; }
   say("ඇතුළත් කළා ✔"); resetAdd(); refresh();
@@ -162,6 +191,8 @@ function openEdit(id){
 async function saveEdit(){
   const d = readForm("e_");
   if(isEmpty(d)){ $("emsg").textContent = "සියල්ල හිස් විය නොහැක."; return; }
+  const dups = await findDups(d, editId);
+  if(dups.length && !confirm("මෙම නමින් (සහ කොටසින්) වෙනත් පොතක් දැනටමත් ඇත. එසේ වුවත් සුරකින්නද?")) return;
   const {error} = await sb.from("books").update(d).eq("id", editId);
   if(error){ $("emsg").textContent = error.message; return; }
   $("ed").close(); refresh();
@@ -250,12 +281,23 @@ async function importCSV(file){
   if(!F.some(k => idx[k] !== undefined)){ say("Import දෝෂය: පළමු පේළියේ title, author, subject... headings නැත."); return; }
   const recs = body.map(r => { const o = {}; F.forEach(k => o[k] = idx[k] === undefined ? null : clean(r[idx[k]]));
     if(o.price !== null){ const n = parseFloat(o.price); o.price = isNaN(n) ? null : n; } return o; }).filter(o => !isEmpty(o));
-  for(let i = 0; i < recs.length; i += 500){
-    const {error} = await sb.from("books").insert(recs.slice(i, i+500));
+  const keyOf = o => (o.title || "").trim().toLowerCase() + "|" + (o.volume || "").trim().toLowerCase();
+  const seen = new Set();
+  for(let p = 0; ; p++){
+    const {data, error} = await sb.from("books").select("title,volume").order("id").range(p*1000, p*1000 + 999);
     if(error){ say("Import දෝෂය: " + error.message); return; }
-    say(`Import කරමින්... ${Math.min(i+500, recs.length)} / ${recs.length}`);
+    data.forEach(o => { if(o.title) seen.add(keyOf(o)); });
+    say("පවතින පොත් පරීක්ෂා කරමින්... " + (p*1000 + data.length));
+    if(data.length < 1000) break;
   }
-  say(`පොත් ${recs.length}ක් Import කළා ✔`); $("csv").value = ""; load();
+  let skipped = 0;
+  const fresh = recs.filter(o => { if(!o.title) return true; const k = keyOf(o); if(seen.has(k)){ skipped++; return false; } seen.add(k); return true; });
+  for(let i = 0; i < fresh.length; i += 500){
+    const {error} = await sb.from("books").insert(fresh.slice(i, i+500));
+    if(error){ say("Import දෝෂය: " + error.message); return; }
+    say(`Import කරමින්... ${Math.min(i+500, fresh.length)} / ${fresh.length}`);
+  }
+  say(`පොත් ${fresh.length}ක් Import කළා ✔` + (skipped ? ` (නම සහ කොටස සමාන නිසා ${skipped}ක් මඟ හැරියා)` : "")); $("csv").value = ""; load();
 }
 </script>
 </body>
