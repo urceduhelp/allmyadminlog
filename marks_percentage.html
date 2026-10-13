@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ලකුණු ප්‍රතිශතය</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #eef2f6;
+    --panel: #ffffff;
+    --ink: #1b2a3a;
+    --muted: #5d6c7c;
+    --line: #d5dde6;
+    --accent: #14705a;
+    --accent-ink: #ffffff;
+    --accent-soft: #e2f3ee;
+    --warn: #b3261e;
+    --warn-soft: #fbe9e7;
+    --focus: #1a5fd0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans Sinhala", "Iskoola Pota", "Nirmala UI", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 24px 16px 48px;
+  }
+  main { max-width: 620px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; font-weight: 700; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: .95rem; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  label, .lbl { display: block; font-weight: 500; margin-bottom: 6px; }
+  .hint { color: var(--muted); font-size: .85rem; font-weight: 400; }
+
+  input[type="text"], input[type="number"], input[type="date"] {
+    width: 100%;
+    font: inherit;
+    color: inherit;
+    background: #fff;
+    border: 1px solid #aebbc9;
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  input:focus-visible, button:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 1px;
+  }
+
+  /* name + suggestions */
+  .combo { position: relative; }
+  .suggest {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+    background: #fff; border: 1px solid #aebbc9; border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(20,40,60,.14);
+    max-height: 264px; overflow-y: auto; z-index: 10;
+    margin: 0; padding: 4px; list-style: none;
+  }
+  .suggest[hidden] { display: none; }
+  .suggest li { padding: 8px 10px; border-radius: 4px; cursor: pointer; }
+  .suggest li.active, .suggest li:hover { background: var(--accent-soft); }
+  .suggest mark { background: none; color: var(--accent); font-weight: 700; }
+
+  .chosen {
+    margin-top: 8px; font-size: .9rem; color: var(--accent);
+    display: flex; align-items: center; gap: 6px; min-height: 1.4em;
+  }
+  .chosen.none { color: var(--muted); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  @media (max-width: 460px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* history */
+  details.history { margin-top: 14px; font-size: .9rem; }
+  details.history summary { cursor: pointer; color: var(--muted); }
+  table.hist { border-collapse: collapse; width: 100%; margin-top: 8px; }
+  table.hist th, table.hist td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+  table.hist th { font-weight: 500; color: var(--muted); }
+
+  /* marks rows */
+  .row { display: grid; grid-template-columns: 28px 1fr 64px 36px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .row .idx { color: var(--muted); text-align: right; font-size: .9rem; }
+  .row input.bad { border-color: var(--warn); background: var(--warn-soft); }
+  .row .pct { font-size: .9rem; color: var(--muted); text-align: right; white-space: nowrap; }
+  .icon-btn {
+    border: 1px solid transparent; background: none; color: var(--muted);
+    width: 36px; height: 36px; border-radius: 6px; cursor: pointer; font-size: 1.2rem; line-height: 1;
+  }
+  .icon-btn:hover { background: #eef2f6; color: var(--warn); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
+  .btn {
+    font: inherit; font-weight: 500; cursor: pointer;
+    border-radius: 6px; padding: 10px 18px; border: 1px solid #aebbc9;
+    background: #fff; color: var(--ink);
+  }
+  .btn:hover { background: #f3f6f9; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-size: 1.05rem; padding: 10px 34px; }
+  .btn.primary:hover { background: #0f5c49; }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .count { margin-left: auto; color: var(--muted); font-size: .85rem; }
+
+  .msg { border-radius: 6px; padding: 10px 12px; font-size: .92rem; margin-top: 12px; }
+  .msg.err { background: var(--warn-soft); color: var(--warn); }
+  .msg.info { background: #eaf1fb; color: #1f4b8f; }
+  .msg[hidden] { display: none; }
+
+  /* result */
+  .result { text-align: center; padding: 28px 20px; border-color: #9fd3c4; background: var(--accent-soft); }
+  .result[hidden] { display: none; }
+  .result .who { font-weight: 700; font-size: 1.1rem; }
+  .result .big { font-size: 4.5rem; font-weight: 700; line-height: 1.1; color: var(--accent); margin: 6px 0; font-variant-numeric: tabular-nums; }
+  .result .detail { color: var(--muted); }
+  .result .saved { margin-top: 12px; font-weight: 500; color: var(--accent); }
+  .result .saved.fail { color: var(--warn); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .result:not([hidden]) .big { animation: pop .35s ease-out; }
+    @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: none; opacity: 1; } }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>ලකුණු ප්‍රතිශතය</h1>
+  <p class="sub">නම තෝරා, ලකුණු ඇතුළත් කර OK ඔබන්න. ප්‍රතිශතය ගණනය වී ශිෂ්‍යයාගේ ඊළඟ Test එක ලෙස සුරැකේ.</p>
+
+  <section class="panel" aria-label="ශිෂ්‍යයා">
+    <label for="name">ශිෂ්‍යයාගේ නම</label>
+    <div class="combo">
+      <input type="text" id="name" autocomplete="off" placeholder="නමේ අකුරක් ටයිප් කරන්න…"
+             role="combobox" aria-expanded="false" aria-controls="suggest" aria-autocomplete="list">
+      <ul class="suggest" id="suggest" role="listbox" hidden></ul>
+    </div>
+    <div class="chosen none" id="chosen" aria-live="polite">නම් ලැයිස්තුව පූරණය වෙමින්…</div>
+
+    <div class="grid2">
+      <div>
+        <label for="testNo">Test අංකය</label>
+        <input type="number" id="testNo" min="1" step="1" placeholder="—">
+      </div>
+      <div>
+        <label for="testDate">දිනය</label>
+        <input type="date" id="testDate">
+      </div>
+    </div>
+    <details class="history" id="history" hidden>
+      <summary id="historySummary">පෙර Test ලකුණු</summary>
+      <table class="hist"><thead><tr><th>Test</th><th>දිනය</th><th>ප්‍රතිශතය</th></tr></thead><tbody id="histBody"></tbody></table>
+    </details>
+  </section>
+
+  <section class="panel" aria-label="ලකුණු">
+    <span class="lbl">ලකුණු <span class="hint">— ලබාගත් / මුළු ලකුණු ආකාරයට (උදා: 8/10)</span></span>
+    <div id="rows"></div>
+    <div class="actions">
+      <button type="button" class="btn" id="addRow">+ තවත් ලකුණක්</button>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="msg err" id="error" hidden role="alert"></div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="ok">OK</button>
+    </div>
+  </section>
+
+  <section class="panel result" id="result" hidden aria-live="polite">
+    <div class="who" id="rWho"></div>
+    <div class="big" id="rPct"></div>
+    <div class="detail" id="rDetail"></div>
+    <div class="saved" id="rSaved"></div>
+    <div class="actions" style="justify-content:center">
+      <button type="button" class="btn" id="again">නව ඇතුළත් කිරීමක්</button>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ===== Supabase සැකසුම් ===== */
+const SUPABASE_URL = "https://uqgzlaxsnknheoerbfus.supabase.co/rest/v1";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxZ3psYXhzbmtuaGVvZXJiZnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5MjM2MTUsImV4cCI6MjA3OTI4MzYxNX0.IYWZ7ukx8J-GJMWy7cMk2BWnmzJmJjjE93yEmJie7nQ";
+const TABLE = "class_report";
+const MAX_ROWS = 10;
+/* ============================ */
+
+const HEADERS = {
+  apikey: SUPABASE_KEY,
+  Authorization: "Bearer " + SUPABASE_KEY,
+  "Content-Type": "application/json"
+};
+
+const $ = id => document.getElementById(id);
+const els = {
+  name: $("name"), suggest: $("suggest"), chosen: $("chosen"),
+  testNo: $("testNo"), testDate: $("testDate"),
+  history: $("history"), historySummary: $("historySummary"), histBody: $("histBody"),
+  rows: $("rows"), addRow: $("addRow"), count: $("count"), error: $("error"),
+  ok: $("ok"), result: $("result"), rWho: $("rWho"), rPct: $("rPct"),
+  rDetail: $("rDetail"), rSaved: $("rSaved"), again: $("again")
+};
+
+let students = [];        // {id, name, test_scores}
+let selected = null;
+let testNoTouched = false;
+let matches = [];
+let activeIdx = -1;
+
+/* ---------- උපකාරක ---------- */
+function todayStr() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
+function fmt(n) { return String(Number(n.toFixed(2))); }
+function scoresOf(s) { return Array.isArray(s && s.test_scores) ? s.test_scores : []; }
+function nextTestNo(scores) {
+  let max = 0;
+  scores.forEach(t => { const n = Number(t.test_no); if (n > max) max = n; });
+  return max + 1;
+}
+function showError(text) {
+  els.error.textContent = text || "";
+  els.error.hidden = !text;
+}
+
+/* ---------- නම් පූරණය ---------- */
+async function loadStudents() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/${TABLE}?select=id,name,test_scores&order=name.asc&limit=5000`, { headers: HEADERS });
+    if (!r.ok) throw new Error(await r.text());
+    students = await r.json();
+    els.chosen.textContent = students.length
+      ? "නමේ අකුරක් ටයිප් කර ලැයිස්තුවෙන් තෝරන්න."
+      : "table එකේ නම් කිසිවක් නැත.";
+  } catch (e) {
+    els.chosen.className = "chosen";
+    els.chosen.style.color = "var(--warn)";
+    els.chosen.textContent = "නම් පූරණය කළ නොහැකි විය: " + (e.message || e);
+  }
+}
+
+/* ---------- Suggestions ---------- */
+function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+function renderSuggest() {
+  const q = els.name.value.trim().toLowerCase();
+  els.suggest.innerHTML = "";
+  if (!q) { closeSuggest(); return; }
+  const starts = [], contains = [];
+  students.forEach(s => {
+    const n = (s.name || "").toLowerCase();
+    if (n.startsWith(q)) starts.push(s);
+    else if (n.includes(q)) contains.push(s);
+  });
+  matches = starts.concat(contains).slice(0, 10);
+  activeIdx = matches.length ? 0 : -1;
+
+  if (!matches.length) {
+    const li = document.createElement("li");
+    li.textContent = "ගැළපෙන නමක් නැත";
+    li.style.color = "var(--muted)";
+    li.style.cursor = "default";
+    els.suggest.appendChild(li);
+  } else {
+    const re = new RegExp("(" + escapeRegExp(q) + ")", "i");
+    matches.forEach((s, i) => {
+      const li = document.createElement("li");
+      li.setAttribute("role", "option");
+      if (i === activeIdx) li.className = "active";
+      s.name.split(re).forEach(part => {
+        if (part.toLowerCase() === q) {
+          const m = document.createElement("mark"); m.textContent = part; li.appendChild(m);
+        } else li.appendChild(document.createTextNode(part));
+      });
+      li.addEventListener("mousedown", ev => { ev.preventDefault(); choose(s); });
+      els.suggest.appendChild(li);
+    });
+  }
+  els.suggest.hidden = false;
+  els.name.setAttribute("aria-expanded", "true");
+}
+function closeSuggest() {
+  els.suggest.hidden = true;
+  els.name.setAttribute("aria-expanded", "false");
+}
+function moveActive(d) {
+  if (!matches.length) return;
+  activeIdx = (activeIdx + d + matches.length) % matches.length;
+  [...els.suggest.children].forEach((li, i) => li.classList.toggle("active", i === activeIdx));
+  const a = els.suggest.children[activeIdx];
+  if (a) a.scrollIntoView({ block: "nearest" });
+}
+
+function choose(s) {
+  selected = s;
+  els.name.value = s.name;
+  closeSuggest();
+  els.chosen.className = "chosen";
+  els.chosen.style.color = "";
+  els.chosen.textContent = "✔ " + s.name + " තෝරාගෙන ඇත";
+  refreshStudentInfo();
+  const first = els.rows.querySelector("input");
+  if (first) first.focus();
+}
+function refreshStudentInfo() {
+  const sc = scoresOf(selected).slice().sort((a, b) => a.test_no - b.test_no);
+  if (!testNoTouched) els.testNo.value = nextTestNo(sc);
+  els.histBody.innerHTML = "";
+  sc.forEach(t => {
+    const tr = document.createElement("tr");
+    [t.test_no, t.test_date || "—", t.marks + "%"].forEach(v => {
+      const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+    });
+    els.histBody.appendChild(tr);
+  });
+  els.history.hidden = false;
+  els.historySummary.textContent = sc.length
+    ? `පෙර Test ලකුණු (${sc.length})`
+    : "පෙර Test ලකුණු නැත — මෙය පළමු Test එකයි";
+}
+
+els.name.addEventListener("input", () => {
+  if (selected && els.name.value !== selected.name) {
+    selected = null;
+    testNoTouched = false;
+    els.testNo.value = "";
+    els.history.hidden = true;
+    els.chosen.className = "chosen none";
+    els.chosen.style.color = "";
+    els.chosen.textContent = "ලැයිස්තුවෙන් නමක් තෝරන්න.";
+  }
+  renderSuggest();
+});
+els.name.addEventListener("focus", () => { if (!selected) renderSuggest(); });
+els.name.addEventListener("blur", () => setTimeout(closeSuggest, 120));
+els.name.addEventListener("keydown", e => {
+  if (e.key === "ArrowDown") { e.preventDefault(); if (els.suggest.hidden) renderSuggest(); else moveActive(1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); moveActive(-1); }
+  else if (e.key === "Enter") {
+    if (!els.suggest.hidden && matches[activeIdx]) { e.preventDefault(); choose(matches[activeIdx]); }
+  } else if (e.key === "Escape") closeSuggest();
+});
+els.testNo.addEventListener("input", () => { testNoTouched = true; });
+
+/* ---------- ලකුණු පේළි ---------- */
+const PAIR = /^\s*(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*$/;
+
+function rowCount() { return els.rows.children.length; }
+function renumber() {
+  [...els.rows.children].forEach((r, i) => r.querySelector(".idx").textContent = (i + 1) + ".");
+  els.count.textContent = rowCount() + " / " + MAX_ROWS;
+  els.addRow.disabled = rowCount() >= MAX_ROWS;
+}
+function addRow(focus) {
+  if (rowCount() >= MAX_ROWS) return null;
+  const row = document.createElement("div");
+  row.className = "row";
+  row.innerHTML = '<span class="idx"></span>' +
+    '<input type="text" inputmode="decimal" autocomplete="off" placeholder="උදා: 8/10" aria-label="ලකුණු">' +
+    '<span class="pct"></span>' +
+    '<button type="button" class="icon-btn" title="මේ පේළිය ඉවත් කරන්න" aria-label="පේළිය ඉවත් කරන්න">×</button>';
+  const input = row.querySelector("input");
+  const pct = row.querySelector(".pct");
+
+  input.addEventListener("input", () => {
+    input.classList.remove("bad");
+    const m = input.value.match(PAIR);
+    if (m && Number(m[2]) > 0) pct.textContent = fmt(Number(m[1]) / Number(m[2]) * 100) + "%";
+    else pct.textContent = "";
+  });
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const next = row.nextElementSibling;
+      if (next) next.querySelector("input").focus();
+      else if (input.value.trim() && rowCount() < MAX_ROWS) addRow(true);
+      else els.ok.focus();
+    }
+  });
+  row.querySelector(".icon-btn").addEventListener("click", () => {
+    if (rowCount() === 1) { input.value = ""; pct.textContent = ""; input.focus(); return; }
+    row.remove(); renumber();
+  });
+  els.rows.appendChild(row);
+  renumber();
+  if (focus) input.focus();
+  return row;
+}
+function resetRows() {
+  els.rows.innerHTML = "";
+  addRow(false);
+}
+els.addRow.addEventListener("click", () => addRow(true));
+
+/* ---------- OK: ගණනය + සුරැකීම ---------- */
+async function onOk() {
+  showError("");
+
+  // නම
+  if (!selected) {
+    const exact = students.filter(s => (s.name || "").trim().toLowerCase() === els.name.value.trim().toLowerCase());
+    if (exact.length === 1) choose(exact[0]);
+    else { showError("කරුණාකර ලැයිස්තුවෙන් ශිෂ්‍යයාගේ නම තෝරන්න."); els.name.focus(); return; }
+  }
+
+  // ලකුණු
+  let sumGot = 0, sumTotal = 0, used = 0, bad = false;
+  [...els.rows.children].forEach(row => {
+    const input = row.querySelector("input");
+    const v = input.value.trim();
+    input.classList.remove("bad");
+    if (!v) return;
+    const m = v.match(PAIR);
+    if (!m || Number(m[2]) <= 0 || Number(m[1]) > Number(m[2])) { input.classList.add("bad"); bad = true; return; }
+    sumGot += Number(m[1]); sumTotal += Number(m[2]); used++;
+  });
+  if (bad) { showError("රතු පැහැති පේළි නිවැරදි කරන්න. ආකාරය: ලබාගත්/මුළු (උදා: 8/10), ලබාගත් ලකුණු මුළු ලකුණුවලට වඩා වැඩි නොවිය යුතුයි."); return; }
+  if (!used) { showError("අවම වශයෙන් එක් ලකුණක්වත් ඇතුළත් කරන්න."); return; }
+
+  const pct = Number((sumGot / sumTotal * 100).toFixed(2));
+  const date = els.testDate.value || todayStr();
+
+  els.ok.disabled = true;
+  els.ok.textContent = "සුරකිමින්…";
+  els.rWho.textContent = selected.name;
+  els.rPct.textContent = fmt(pct) + "%";
+  els.rDetail.textContent = `ලකුණු ${used} ක එකතුව: ${fmt(sumGot)} / ${fmt(sumTotal)}`;
+  els.rSaved.className = "saved";
+  els.rSaved.textContent = "සුරකිමින්…";
+  els.result.hidden = false;
+
+  try {
+    // නවතම දත්ත නැවත ලබාගෙන ඒවාට එකතු කරයි (වෙනත් අයෙකු ඇතුළත් කළ ඒවා මැකී නොයන ලෙස)
+    const g = await fetch(`${SUPABASE_URL}/${TABLE}?id=eq.${selected.id}&select=test_scores`, { headers: HEADERS });
+    if (!g.ok) throw new Error(await g.text());
+    const rows = await g.json();
+    const scores = Array.isArray(rows[0] && rows[0].test_scores) ? rows[0].test_scores.slice() : [];
+
+    let testNo = Number(els.testNo.value);
+    if (!testNoTouched || !testNo) testNo = nextTestNo(scores);
+    if (testNo < 1 || !Number.isInteger(testNo)) throw new Error("Test අංකය නිවැරදි නොවේ.");
+
+    const entry = { marks: pct, test_no: testNo, test_date: date };
+    const at = scores.findIndex(t => Number(t.test_no) === testNo);
+    if (at >= 0) {
+      if (!confirm(`Test ${testNo} සඳහා දැනටමත් ${scores[at].marks}% ඇත. ${fmt(pct)}% මගින් ආදේශ කරන්නද?`)) {
+        els.result.hidden = true;
+        return;
+      }
+      scores[at] = entry;
+    } else scores.push(entry);
+    scores.sort((a, b) => a.test_no - b.test_no);
+
+    const p = await fetch(`${SUPABASE_URL}/${TABLE}?id=eq.${selected.id}`, {
+      method: "PATCH",
+      headers: { ...HEADERS, Prefer: "return=representation" },
+      body: JSON.stringify({ test_scores: scores })
+    });
+    if (!p.ok) throw new Error(await p.text());
+    const updated = await p.json();
+    if (!updated.length) throw new Error("සුරැකීමට අවසර නැත (Supabase RLS policy එක පරීක්ෂා කරන්න).");
+
+    selected.test_scores = scores;
+    const inList = students.find(s => s.id === selected.id);
+    if (inList) inList.test_scores = scores;
+
+    els.rSaved.textContent = `✔ Test ${testNo} ලෙස සුරැකිණි (${date})`;
+    testNoTouched = false;
+    refreshStudentInfo();
+  } catch (e) {
+    els.rSaved.className = "saved fail";
+    els.rSaved.textContent = "සුරැකීම අසාර්ථකයි: " + (e.message || e);
+  } finally {
+    els.ok.disabled = false;
+    els.ok.textContent = "OK";
+  }
+}
+els.ok.addEventListener("click", onOk);
+
+els.again.addEventListener("click", () => {
+  selected = null; testNoTouched = false;
+  els.name.value = "";
+  els.testNo.value = "";
+  els.testDate.value = todayStr();
+  els.history.hidden = true;
+  els.result.hidden = true;
+  els.chosen.className = "chosen none";
+  els.chosen.style.color = "";
+  els.chosen.textContent = "නමේ අකුරක් ටයිප් කර ලැයිස්තුවෙන් තෝරන්න.";
+  showError("");
+  resetRows();
+  els.name.focus();
+});
+
+/* ---------- ආරම්භය ---------- */
+els.testDate.value = todayStr();
+resetRows();
+loadStudents();
+</script>
+</body>
+</html>
